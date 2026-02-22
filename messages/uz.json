@@ -1,0 +1,106 @@
+{
+    "Hero": {
+        "badge": "First Principles + AI + Spaced Repetition",
+        "headline": "Yurisprudensiyani yodlamang. Uni chuqur tushuning.",
+        "subheadline": "First Principles metodikasi, AI tahlili va intervalli takrorlash (Spaced Repetition) orqali murakkab qonunlarni osongina o'zlashtiring.",
+        "cta_free": "Boshlash (Tekin)",
+        "cta_login": "Tizimga kirish"
+    },
+    "Features": {
+        "title": "Platformaning asosiy ustunlari",
+        "subtext": "First Principles, sun'iy intellekt va ilmiy asoslangan o'rganish usullari birlashgan yagona platforma.",
+        "f1_title": "Dinamik Mind Map",
+        "f1_desc": "AI orqali murakkab matnlar va kazuslarni tarkibiy qismlarga ajratib, vizual daraxtga aylantiring.",
+        "f2_title": "LAB & Couch",
+        "f2_desc": "Shaxsiy ishchi zonangizda insholar yozing, AI plagiatni tekshiradi va siz bilan Sokratik suhbat olib boradi.",
+        "f3_title": "Intervalli Takrorlash",
+        "f3_desc": "Qonun va moddalarni xotirada uzoq muddat saqlash uchun maxsus topshiriqlar tizimi."
+    },
+    "Benefits": {
+        "title": "Nega aynan ALLOMA AI?",
+        "subtext": "Huquqni o'rganishning zamonaviy, ilmiy asoslangan va samarali yo'li.",
+        "b1_title": "Chuqur tushunish",
+        "b1_desc": "Mavzularni sirtdan yodlash emas, ularning mohiyatini First Principles orqali anglang.",
+        "b2_title": "AI yordamchingiz",
+        "b2_desc": "Shaxsiy AI tyutor siz bilan Sokratik usulda muloqot qiladi va bilimingizni mustahkamlaydi.",
+        "b3_title": "Doimo xotirangizda",
+        "b3_desc": "Intervalli takrorlash tizimi orqali qonun moddalarini uzoq muddatga eslab qoling.",
+        "cta": "Hozir boshlash"
+    },
+    "Pricing": {
+        "title": "Huquqiy ta'limingizni bugun boshlang",
+        "subtext": "O'qish ehtiyojlaringizga mos keladigan rejani tanlang.",
+        "monthly": "Oylik",
+        "annually": "Yillik",
+        "save": "20% tejash",
+        "free_title": "Bepul",
+        "free_desc": "Alloma AI imkoniyatlarini o'rganayotgan yurist talabalar uchun maxsus.",
+        "free_cta": "Bepul sinab ko'rish",
+        "pro_title": "Pro",
+        "pro_desc": "Sokratik AI va barcha funksiyalardan foydalanmoqchi bo'lgan talabalar uchun.",
+        "pro_cta": "Boshlash",
+        "popular": "Eng mashhur",
+        "per_month": "/ oyiga",
+        "per_year": "/ yiliga",
+        "features": {
+            "basic_ai": "Asosiy AI model",
+            "advanced_ai": "Kengaytirilgan AI (Sokratik Tyutor)",
+            "mind_maps": "Cheklanmagan Dinamik Mind Map",
+            "essays": "LAB & Couch insholar tekshiruvi",
+            "repetition": "To'liq intervalli takrorlash tizimi",
+            "support": "Tezkor yordam xizmati"
+        }
+    },
+    "FAQ": {
+        "title": "Ko'p beriladigan savollar (FAQ)",
+        "subtext": "ALLOMA AI haqida barcha kerakli ma'lumotlar va u sizning ta'limingizni qanday o'zgartirishi haqida.",
+        "q1": "ALLOMA AI o'zi nima?",
+        "a1": "ALLOMA AI - bu yurist talabalar uchun maxsus yaratilgan platforma bo'lib, huquqni yodlash emas, chuqur tushunish uchun First Principles, Sokratik AI va Intervalli Takrorlash usullarini birlashtiradi.",
+        "q2": "Amaliyotchi huquqshunoslar uchun ham mos keladimi?",
+        "a2": "Ha, garchan asosan talabalar uchun bo'lsa ham, amaliyotchi yuristlar Dinamik Mind Map orqali murakkab ishlarni tuzilmalashlari va tayyorgarlik ko'rishlari mumkin.",
+        "q3": "AI Tyutor qanday ishlaydi?",
+        "a3": "Sokratik AI shunchaki javob bermaydi, balki sizga yetakchi savollar berish orqali xulosaga o'zingiz kelishingizni ta'minlaydi. Bu orqali huquqiy mantiqni kuchaytiradi.",
+        "q4": "Ma'lumotlarim xavfsizmi?",
+        "a4": "Albatta. Sizning yozgan insholaringiz, hujjatlar va testlaringiz maxfiy saqlanadi va umumiy AI modellarini o'qitish uchun ishlatilmaydi.",
+        "q5": "Telefonda ishlatsa bo'ladimi?",
+        "a5": "Ha, ALLOMA AI to'liq moslashuvchan bo'lib, mobil telefon, planshet yoki kompyuter orqali istalgan joyda foydalanish mumkin."
+    },
+    "Nav": {
+        "platform": "Platforma",
+        "methodology": "Metodika",
+        "pricing": "Narxlar",
+        "signin": "Kirish",
+        "get_started": "Boshlash"
+    },
+    "Footer": {
+        "description": "Sun'iy intellekt va First Principles asosidagi yuridik ta'lim platformasi. Yurisprudensiyani chuqur tushuning.",
+        "terms": "Qoidalar",
+        "privacy": "Maxfiylik",
+        "rights": "Barcha huquqlar himoyalangan"
+    },
+    "Auth": {
+        "welcome_in": "ALLOMA AI ga xush kelibsiz",
+        "welcome_up": "ALLOMA AI ga xush kelibsiz",
+        "sub_in": "Email va parol orqali tizimga kiring",
+        "sub_up": "Ro'yxatdan o'tish uchun ma'lumotlaringizni kiriting",
+        "or": "Yoki",
+        "google": "Google orqali davom etish",
+        "github": "GitHub orqali davom etish",
+        "email": "Email manzil",
+        "email_ph": "Email manzilingiz",
+        "pass": "Parol",
+        "pass_ph": "Parolingizni kiriting",
+        "fname": "Ism",
+        "fname_ph": "Ismingiz",
+        "lname": "Familiya",
+        "lname_ph": "Familiyangiz",
+        "remember": "Meni eslab qolish",
+        "forgot": "Parolni unutdingizmi?",
+        "btn_in": "Kirish",
+        "btn_in_loading": "Kirilmoqda...",
+        "btn_up": "Ro'yxatdan o'tish",
+        "btn_up_loading": "Yuborilmoqda...",
+        "no_account": "Hisobingiz yo'qmi?",
+        "has_account": "Hisobingiz bormi?"
+    }
+}

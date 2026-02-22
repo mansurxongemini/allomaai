@@ -1,0 +1,106 @@
+{
+    "Hero": {
+        "badge": "First Principles + AI + Spaced Repetition",
+        "headline": "Don't just memorize law. Understand it deeply.",
+        "subheadline": "Master complex laws easily through First Principles methodology, AI analysis, and Spaced Repetition.",
+        "cta_free": "Get Started (Free)",
+        "cta_login": "Sign In"
+    },
+    "Features": {
+        "title": "Core Pillars of the Platform",
+        "subtext": "A unified platform combining First Principles, Artificial Intelligence, and scientifically proven learning methods.",
+        "f1_title": "Dynamic Mind Map",
+        "f1_desc": "Break down complex texts and cases into their components and turn them into a visual tree using AI.",
+        "f2_title": "LAB & Couch",
+        "f2_desc": "Write essays in your personal workspace, AI checks for plagiarism and engages in a Socratic dialogue with you.",
+        "f3_title": "Spaced Repetition",
+        "f3_desc": "A special task system for long-term retention of laws and articles in memory."
+    },
+    "Benefits": {
+        "title": "Why ALLOMA AI?",
+        "subtext": "A modern, scientifically based, and effective way to study law.",
+        "b1_title": "Deep Understanding",
+        "b1_desc": "Don't just memorize topics superficially, understand their essence through First Principles.",
+        "b2_title": "Your AI Assistant",
+        "b2_desc": "A personal AI tutor communicates with you using the Socratic method and reinforces your knowledge.",
+        "b3_title": "Always in Your Memory",
+        "b3_desc": "Remember legal articles for the long term through the spaced repetition system.",
+        "cta": "Start Now"
+    },
+    "Pricing": {
+        "title": "Start Your Legal Education Journey",
+        "subtext": "Choose the plan that best fits your study needs.",
+        "monthly": "Monthly",
+        "annually": "Annually",
+        "save": "Save 20%",
+        "free_title": "Free",
+        "free_desc": "For law students exploring ALLOMA AI—get started with essential features.",
+        "free_cta": "Try it for free",
+        "pro_title": "Pro",
+        "pro_desc": "For serious students requiring advanced AI tutoring and full feature access.",
+        "pro_cta": "Get Started",
+        "popular": "Most Popular",
+        "per_month": "/ month",
+        "per_year": "/ year",
+        "features": {
+            "basic_ai": "Basic AI model access",
+            "advanced_ai": "Advanced AI model access (Socratic Tutor)",
+            "mind_maps": "Unlimited Dynamic Mind Maps",
+            "essays": "LAB & Couch document essays",
+            "repetition": "Full Spaced Repetition features",
+            "support": "Priority support"
+        }
+    },
+    "FAQ": {
+        "title": "Frequently Asked Questions",
+        "subtext": "Everything you need to know about ALLOMA AI and how it can transform your legal studies.",
+        "q1": "What is ALLOMA AI?",
+        "a1": "ALLOMA AI is an educational platform designed specifically for law students, integrating First Principles thinking, Socratic AI tutoring, and Spaced Repetition to help you truly understand rather than just memorize the law.",
+        "q2": "Is it suitable for practicing lawyers?",
+        "a2": "Yes, while primarily designed for students, practicing lawyers can use the Dynamic Mind Map and Socratic dialogue to structure complex casework and arguments effectively.",
+        "q3": "How does the AI Tutor work?",
+        "a3": "The Socratic AI Tutor doesn't just give you answers. It asks guiding questions to help you reach conclusions on your own, ensuring deep comprehension of legal reasoning.",
+        "q4": "Is my data safe?",
+        "a4": "Absolutely. Your essays, cases, and study materials are kept strictly confidential and are not used to train generic AI models.",
+        "q5": "Can I use it on mobile?",
+        "a5": "Yes, ALLOMA AI is fully responsive and can be accessed on smartphones, tablets, and desktops for studying on the go."
+    },
+    "Nav": {
+        "platform": "Platform",
+        "methodology": "Methodology",
+        "pricing": "Pricing",
+        "signin": "Sign In",
+        "get_started": "Get Started"
+    },
+    "Footer": {
+        "description": "A legal education platform based on AI and First Principles. Understand jurisprudence deeply.",
+        "terms": "Terms",
+        "privacy": "Privacy",
+        "rights": "All Rights Reserved"
+    },
+    "Auth": {
+        "welcome_in": "Welcome back to ALLOMA AI",
+        "welcome_up": "Welcome to ALLOMA AI",
+        "sub_in": "Sign in with your email and password",
+        "sub_up": "Enter your details to create an account",
+        "or": "Or",
+        "google": "Continue with Google",
+        "github": "Continue with GitHub",
+        "email": "Email address",
+        "email_ph": "Your email address",
+        "pass": "Password",
+        "pass_ph": "Enter your password",
+        "fname": "First name",
+        "fname_ph": "Your first name",
+        "lname": "Last name",
+        "lname_ph": "Your last name",
+        "remember": "Keep me logged in",
+        "forgot": "Forgot password?",
+        "btn_in": "Sign In",
+        "btn_in_loading": "Signing in...",
+        "btn_up": "Sign Up",
+        "btn_up_loading": "Signing up...",
+        "no_account": "Don't have an account?",
+        "has_account": "Already have an account?"
+    }
+}

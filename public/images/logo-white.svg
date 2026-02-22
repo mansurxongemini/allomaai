@@ -1,0 +1,10 @@
+<svg width="180" height="32" viewBox="0 0 180 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Icon: Abstract book/mind symbol -->
+  <rect x="0" y="4" width="24" height="24" rx="6" fill="#4E6EFF"/>
+  <path d="M7 10.5C7 10.5 12 8 12 12.5V22C12 22 7 20 7 16V10.5Z" fill="white" opacity="0.9"/>
+  <path d="M17 10.5C17 10.5 12 8 12 12.5V22C12 22 17 20 17 16V10.5Z" fill="white" opacity="0.6"/>
+  <!-- Text: ALLOMA -->
+  <text x="32" y="22" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#F9FAFB" letter-spacing="0.5">ALLOMA</text>
+  <!-- Text: AI -->
+  <text x="126" y="22" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="400" fill="#4E6EFF" letter-spacing="0.5">AI</text>
+</svg>

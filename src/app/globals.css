@@ -1,0 +1,456 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+/* v0.dev dan kelgan animatsiya plagini. Agar terminalda xato bersa, uni 'npm i tw-animate-css' qilib o'rnating yoki o'chirib tashlang */
+/* @import 'tw-animate-css'; */
+
+/* Ikkala tizimning qorong'i rejimini (Dark mode) bitta qiluvchi super-variant */
+@custom-variant dark (&:where(.dark, .dark *, [data-theme=dark], [data-theme=dark] *));
+
+/* =========================================
+   1. VERCEL (v0.dev) CSS O'ZGARUVCHILARI
+========================================= */
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark,
+[data-theme="dark"] {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.439 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.439 0 0);
+}
+
+/* =========================================
+   2. TAILWIND THEME (IKKALA LOYIHA UCHUN)
+========================================= */
+@theme inline {
+  /* --- VERCEL (v0.dev) o'zgaruvchilari --- */
+  --font-sans: 'Geist', 'Geist Fallback';
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* --- ANTIGRAVITY o'zgaruvchilari --- */
+  --color-primary-50: #f4f3ff;
+  --color-primary-100: #ebe9fe;
+  --color-primary-200: #d9d6fe;
+  --color-primary-300: #bdb4fe;
+  --color-primary-400: #9b8afb;
+  --color-primary-500: #7a5af8;
+  --color-primary-600: #6938ef;
+  --color-primary-700: #5925dc;
+  --color-primary-800: #4a1fb8;
+
+  --color-success-50: #ecfdf3;
+  --color-success-500: #ecfdf3;
+  --color-success-600: #12b76a;
+
+  --color-error-50: #fef3f2;
+  --color-error-100: #fee4e2;
+  --color-error-500: #f04438;
+  --color-error-600: #d92d20;
+
+  --color-dark-primary: #171f2e;
+  --color-dark-secondary: #1a2231;
+
+  --text-title-lg: 44px;
+  --text-title-lg--line-height: 52px;
+
+  --shadow-theme-xs: 0px 1px 2px 0px rgba(16, 24, 40, 0.05);
+  --shadow-theme-sm: 0px 8px 20px 0px rgba(0, 0, 0, 0.08);
+  --shadow-theme-lg:
+    0px 12px 16px -4px rgba(16, 24, 40, 0.08),
+    0px 4px 6px -2px rgba(16, 24, 40, 0.03);
+  --shadow-ring: 0px 0px 0px 4px rgba(70, 95, 255, 0.12);
+  --shadow-theme-md: 0px 8px 30px 0px rgba(12, 11, 25, 0.04);
+
+  --background-image-gradient-1: linear-gradient(180deg, #f8fcff 0%, #f1efff 50%, #f8dcff 100%);
+  --background-image-gradient-2: linear-gradient(97deg, #725cff 0%, #b5b1ff 140.21%);
+}
+
+/* =========================================
+   3. BAZAVIY SOZLAMALAR (BASE LAYER)
+========================================= */
+@layer base {
+
+  /* Vercel sozlamalari */
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Antigravity sozlamalari */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  input[type="search"]::-webkit-search-cancel-button {
+    display: none;
+  }
+}
+
+/* =========================================
+   4. ANTIGRAVITY MAXSUS KLASSLARI
+========================================= */
+.button-bg {
+  background-image: linear-gradient(97deg, #725cff 0%, #b5b1ff 140.21%);
+}
+
+.tab-img-bg {
+  background: linear-gradient(90deg,
+      rgba(255, 88, 213, 0.2) 0%,
+      rgba(78, 110, 255, 0.2) 100%);
+  position: relative;
+  z-index: 20;
+}
+
+[data-theme="light"] .tab-img-bg::after {
+  border-radius: 32px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #fff 93.51%);
+  content: "";
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  position: absolute;
+  z-index: 10;
+}
+
+[data-theme="dark"] .tab-img-bg::after {
+  background: linear-gradient(180deg, rgba(23, 31, 46, 0) 0%, #171f2e 93.51%);
+}
+
+.tab-img-overlay {
+  border-radius: 26px;
+  background: linear-gradient(180deg,
+      rgba(255, 255, 255, 0.3) 67.58%,
+      rgba(255, 255, 255, 0) 100%);
+  backdrop-filter: blur(18.81816291809082px);
+  position: relative;
+  z-index: 20;
+}
+
+@utility wrapper {
+  @apply container px-5 mx-auto sm:px-7;
+}
+
+.shadow-one {
+  box-shadow: 0px 1px 2px 0px rgba(16, 24, 40, 0.05);
+}
+
+.benefits-bg {
+  border-radius: 20px;
+  background: linear-gradient(216deg, #a2e4e4 0%, #1c9ef6 100%);
+}
+
+.gradient-bg-two {
+  background-image: var(--Gradient-2, linear-gradient(97deg, #725cff 0%, #b5b1ff 140.21%));
+}
+
+@utility hero-glow-bg {
+  background-image: linear-gradient(180deg, rgba(122, 90, 248, 0) 0%, #7a5af8 100%);
+}
+
+.core-feature-wrapper {
+  border-radius: 20px;
+  box-shadow: 0px 30px 50px -32px rgba(107, 110, 148, 0.04);
+}
+
+.core-feature-icon {
+  background-image: linear-gradient(180deg, #7a5af8 0%, rgba(122, 90, 248, 0) 100%);
+  filter: drop-shadow(0px 23px 33px rgba(87, 80, 241, 0.59));
+  width: 76px;
+  height: 76px;
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  border-radius: 50px;
+}
+
+.contact-wrapper {
+  border-radius: 24px;
+  box-shadow: 0px 32px 100px -12px rgba(16, 24, 40, 0.05);
+}
+
+.dashboard-gradient {
+  background-image: linear-gradient(92deg, var(--Colors-Brand-500, #7a5af8) 0%, var(--Colors-Brand-200, #d9d6fe) 100%);
+}
+
+[data-theme="light"] .widget-bg {
+  background-image: linear-gradient(180deg, #f8fcff 0%, #f1efff 50%, #f8dcff 100%);
+}
+
+[data-theme="dark"] .widget-bg {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+@utility custom-scrollbar {
+  &::-webkit-scrollbar {
+    @apply w-4.5;
+  }
+
+  &::-webkit-scrollbar-track {
+    @apply rounded-full;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    @apply bg-gray-200 border-[0.35rem] border-transparent bg-clip-padding rounded-full;
+  }
+
+  [data-theme="dark"] &::-webkit-scrollbar-thumb,
+  .dark &::-webkit-scrollbar-thumb {
+    @apply bg-gray-700;
+  }
+}
+
+@media (min-width: 1024px) {
+  .nav-item:hover .dropdown-menu {
+    display: block;
+  }
+
+  .nav-item:hover .dropdown-arrow {
+    transform: rotate(180deg);
+  }
+}
+
+.gradient-border {
+  position: relative;
+  background-clip: padding-box;
+  border: 1.5px solid transparent;
+}
+
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  margin: -1.4px;
+  border-radius: inherit;
+  background: linear-gradient(to right, rgba(255, 87, 213, 0.5), rgba(78, 110, 255, 0.5));
+  z-index: -1;
+}
+
+.dark .gradient-border::before,
+[data-theme="dark"] .gradient-border::before {
+  z-index: 5;
+}
+
+[x-cloak] {
+  display: none !important;
+}
+
+[data-theme="light"] .white-gradient {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #fff 44.75%);
+}
+
+[data-theme="dark"] .white-gradient {
+  background-image: linear-gradient(180deg, rgba(23, 31, 46, 0) 0%, #171f2e 44.75%);
+}
+
+.gradient-btn {
+  background-image: linear-gradient(97deg, #725cff 0%, #b5b1ff 140.21%);
+  color: white;
+  background-size: 200% auto;
+  background-position: 0% center;
+  transition: background-position 0.6s ease-in-out, transform 0.3s ease;
+  will-change: background-position, transform;
+}
+
+.gradient-btn:hover {
+  background-image: linear-gradient(97deg, #b5b1ff 0%, #725cff 140.21%);
+  background-position: 100% center;
+}
+
+.history-item {
+  position: relative;
+  height: 40px;
+  mask-image: linear-gradient(90deg, #000, #000 84%, transparent 89%, transparent);
+}
+
+.history-item:hover {
+  mask-image: none;
+}
+
+/* Animatsiyalar */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes float-y {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes float-x {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  50% {
+    transform: translateX(10px);
+  }
+}
+
+@keyframes float-xy {
+
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  50% {
+    transform: translate(10px, -10px);
+  }
+}
+
+@keyframes float-rev {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(8px);
+  }
+}
+
+.floating {
+  animation: float 3s ease-in-out infinite;
+}
+
+.floating-1 {
+  animation: float-y 3s ease-in-out infinite;
+}
+
+.floating-2 {
+  animation: float-x 4s ease-in-out infinite;
+}
+
+.floating-3 {
+  animation: float-xy 5s ease-in-out infinite;
+}
+
+.floating-4 {
+  animation: float-rev 6s ease-in-out infinite;
+}

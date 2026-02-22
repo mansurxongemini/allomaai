@@ -1,0 +1,10 @@
+export { default as boxCube } from './box-cube.svg';
+export { default as bulb } from './bulb.svg';
+export { default as chat } from './chat.svg';
+export { default as crown } from './crown.svg';
+export { default as file } from './file.svg';
+export { default as laptop } from './laptop.svg';
+export { default as lightningBolt } from './lightning-bolt.svg';
+export { default as pencil } from './pencil.svg';
+export { default as robot } from './robot.svg';
+export { default as selectCursor } from './select-cursor.svg';
