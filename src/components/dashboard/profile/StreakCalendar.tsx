@@ -4,12 +4,45 @@ import { Flame, CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { UserProfile, WeeklyStreak } from "@/lib/gamification"
 
+import { Skeleton } from "@/components/ui/skeleton"
+
 interface StreakCalendarProps {
-  streak: UserProfile["streak"]
-  weeklyStreak: WeeklyStreak[]
+  streak?: UserProfile["streak"]
+  weeklyStreak?: WeeklyStreak[]
+  isLoading?: boolean
 }
 
-export function StreakCalendar({ streak, weeklyStreak }: StreakCalendarProps) {
+export function StreakCalendar({ streak, weeklyStreak, isLoading }: StreakCalendarProps) {
+  if (isLoading || !streak || !weeklyStreak) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <Skeleton className="w-8 h-8 rounded-lg" />
+          <div className="space-y-1">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+        </div>
+        <div className="flex items-baseline gap-1 mb-4">
+          <Skeleton className="h-10 w-12" />
+          <Skeleton className="h-4 w-6" />
+        </div>
+        <div className="flex items-center gap-2 sm:gap-3">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} className="flex flex-col items-center gap-1.5 flex-1">
+              <Skeleton className="w-9 h-9 sm:w-10 sm:h-10 rounded-full" />
+              <Skeleton className="h-3 w-4" />
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
+          <Skeleton className="w-2 h-2 rounded-full" />
+          <Skeleton className="h-3 w-32" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
       <div className="flex items-center gap-2 mb-4">

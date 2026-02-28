@@ -19,6 +19,7 @@ const MiniEditor = ({ value = "", onChange, placeholder }: MiniEditorProps) => {
             }),
         ],
         content: value,
+        immediatelyRender: false,
         onUpdate: ({ editor }) => {
             onChange?.(editor.getHTML())
         },

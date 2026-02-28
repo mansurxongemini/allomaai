@@ -15,15 +15,10 @@ import { cn } from "@/lib/utils"
 import type { Badge } from "@/lib/gamification"
 import { TIER_STYLES } from "@/lib/gamification"
 
+import { Skeleton } from "@/components/ui/skeleton"
+
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  Star,
-  Trophy,
-  Flame,
-  Brain,
-  FileText,
-  Medal,
-  Scale,
-  Footprints,
+  Star, Trophy, Flame, Brain, FileText, Medal, Scale, Footprints,
 }
 
 function resolveIcon(name: string) {
@@ -31,10 +26,32 @@ function resolveIcon(name: string) {
 }
 
 interface BadgesGridProps {
-  badges: Badge[]
+  badges?: Badge[]
+  isLoading?: boolean
 }
 
-export function BadgesGrid({ badges }: BadgesGridProps) {
+export function BadgesGrid({ badges, isLoading }: BadgesGridProps) {
+  if (isLoading || !badges) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <div className="flex items-center gap-2">
+            <Skeleton className="w-8 h-8 rounded-lg" />
+            <div className="space-y-1">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-3 w-12" />
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 w-full rounded-xl" />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   const unlocked = badges.filter((b) => b.unlockedAt)
   const locked = badges.filter((b) => !b.unlockedAt)
 
@@ -64,7 +81,7 @@ export function BadgesGrid({ badges }: BadgesGridProps) {
       {/* Locked badges */}
       {locked.length > 0 && (
         <>
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-3 mt-4">
             <Lock className="w-3.5 h-3.5 text-slate-400" />
             <span className="text-xs font-medium uppercase tracking-wider text-slate-400">
               Qulflangan
@@ -133,7 +150,7 @@ function BadgeCard({ badge }: { badge: Badge }) {
             />
           </div>
           <p className="text-[10px] text-slate-400 text-center mt-1 tabular-nums">
-            {badge.progress}%
+            {Math.round(badge.progress)}%
           </p>
         </div>
       )}

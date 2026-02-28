@@ -29,6 +29,7 @@ const AdvancedEditor = ({ value = "", onChange }: AdvancedEditorProps) => {
             StarterKit,
         ],
         content: value,
+        immediatelyRender: false,
         onUpdate: ({ editor }) => {
             onChange?.(editor.getHTML())
         },

@@ -5,11 +5,53 @@ import { cn } from "@/lib/utils"
 import type { UserProfile } from "@/lib/gamification"
 import { getXpProgress, getRank, RANKS } from "@/lib/gamification"
 
+import { Skeleton } from "@/components/ui/skeleton"
+
 interface ProfileHeroProps {
-  user: UserProfile
+  user: UserProfile | null
+  isLoading?: boolean
 }
 
-export function ProfileHero({ user }: ProfileHeroProps) {
+function ProfileHeroSkeleton() {
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 lg:p-8 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+        <div className="flex items-center gap-4 sm:flex-col sm:items-center sm:gap-2">
+          <Skeleton className="w-16 h-16 sm:w-20 sm:h-20 rounded-full" />
+          <div className="sm:hidden space-y-2">
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="hidden sm:block space-y-2 mb-4">
+            <Skeleton className="h-7 w-48" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <div className="mt-3 sm:mt-4 space-y-3">
+            <div className="flex justify-between items-center">
+              <Skeleton className="h-5 w-24 rounded-full" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+            <Skeleton className="h-2.5 w-full rounded-full" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-4">
+            <Skeleton className="h-16 w-full rounded-xl" />
+            <Skeleton className="h-16 w-full rounded-xl" />
+            <Skeleton className="h-16 w-full rounded-xl" />
+            <Skeleton className="h-16 w-full rounded-xl" />
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+export function ProfileHero({ user, isLoading }: ProfileHeroProps) {
+  if (isLoading || !user) {
+    return <ProfileHeroSkeleton />
+  }
+
   const rank = getRank(user.xp)
   const progress = getXpProgress(user.xp)
   const nextRank = RANKS.find((r) => r.level === rank.level + 1)
@@ -103,7 +145,7 @@ export function ProfileHero({ user }: ProfileHeroProps) {
             <QuickStat
               icon={Calendar}
               label="A'zolik"
-              value={`${Math.round((Date.now() - new Date(user.joinedAt).getTime()) / (1000 * 60 * 60 * 24))} kun`}
+              value={`${Math.max(0, Math.round((Date.now() - new Date(user.joinedAt || Date.now()).getTime()) / (1000 * 60 * 60 * 24)))} kun`}
               color="text-teal-600"
               bg="bg-teal-50"
             />
@@ -146,3 +188,4 @@ function QuickStat({
     </div>
   )
 }
+

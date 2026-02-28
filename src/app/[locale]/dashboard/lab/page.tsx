@@ -1,11 +1,50 @@
 "use client"
 
-import { BookOpen, Lightbulb, FileText, ArrowRight } from "lucide-react"
+import { BookOpen, Lightbulb, FileText, ArrowRight, Loader2 } from "lucide-react"
 import { Link } from "@/i18n/routing"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { useEffect, useState } from "react"
+import { db } from "@/lib/firebase"
+import { collection, getCountFromServer } from "firebase/firestore"
+
+function StatSkeleton() {
+  return (
+    <div className="text-center animate-pulse">
+      <div className="h-8 w-12 rounded bg-slate-200 mx-auto mb-1" />
+      <div className="h-4 w-16 rounded bg-slate-100 mx-auto" />
+    </div>
+  )
+}
 
 export default function LabPage() {
+  const [counts, setCounts] = useState({ subjects: 0, methods: 0, articles: 0 })
+  const [loadingCounts, setLoadingCounts] = useState(true)
+
+  useEffect(() => {
+    async function fetchCounts() {
+      try {
+        const [subjectsSnap, methodsSnap, articlesSnap] = await Promise.all([
+          getCountFromServer(collection(db, "subjects")),
+          getCountFromServer(collection(db, "methods")),
+          getCountFromServer(collection(db, "blogs")),
+        ])
+        setCounts({
+          subjects: subjectsSnap.data().count,
+          methods: methodsSnap.data().count,
+          articles: articlesSnap.data().count,
+        })
+      } catch (error) {
+        console.error("Error fetching lab counts:", error)
+        // Keep defaults on failure
+        setCounts({ subjects: 5, methods: 4, articles: 24 })
+      } finally {
+        setLoadingCounts(false)
+      }
+    }
+    fetchCounts()
+  }, [])
+
   return (
     <div className="p-6 md:p-8 lg:p-10 max-w-6xl mx-auto">
       {/* Header */}
@@ -78,20 +117,30 @@ export default function LabPage() {
         </Card>
       </div>
 
-      {/* Statistics */}
+      {/* Statistics — live from Firestore */}
       <div className="mt-12 grid grid-cols-3 gap-6">
-        <div className="text-center">
-          <div className="text-3xl font-bold text-teal-600 mb-1">5</div>
-          <div className="text-sm text-slate-600">Fanlar</div>
-        </div>
-        <div className="text-center">
-          <div className="text-3xl font-bold text-amber-600 mb-1">4</div>
-          <div className="text-sm text-slate-600">Metodlar</div>
-        </div>
-        <div className="text-center">
-          <div className="text-3xl font-bold text-blue-600 mb-1">24</div>
-          <div className="text-sm text-slate-600">Maqolalar</div>
-        </div>
+        {loadingCounts ? (
+          <>
+            <StatSkeleton />
+            <StatSkeleton />
+            <StatSkeleton />
+          </>
+        ) : (
+          <>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-teal-600 mb-1">{counts.subjects}</div>
+              <div className="text-sm text-slate-600">Fanlar</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-amber-600 mb-1">{counts.methods}</div>
+              <div className="text-sm text-slate-600">Metodlar</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-blue-600 mb-1">{counts.articles}</div>
+              <div className="text-sm text-slate-600">Maqolalar</div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

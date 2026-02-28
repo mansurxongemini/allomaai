@@ -11,8 +11,11 @@ export interface Badge {
   iconName: string
   tier: "bronze" | "silver" | "gold" | "platinum"
   unlockedAt: string | null // ISO date or null = locked
-  progress: number // 0-100
+  progress: number // 0-100 (Dynamic UI calculation)
   requirement: string
+  metricType?: "stat" | "streak"
+  statKey?: string
+  requirementValue?: number
 }
 
 /* ---------- Rank ---------- */
@@ -38,6 +41,7 @@ export interface UserProfile {
     current: number
     longest: number
     todayCompleted: boolean
+    lastActiveDate: string
   }
   stats: {
     articlesSubmitted: number
@@ -47,6 +51,7 @@ export interface UserProfile {
     totalStudyHours: number
     avgDailyMinutes: number
   }
+  unlockedBadges: string[]
 }
 
 /* ---------- Activity data for charts ---------- */
@@ -104,42 +109,21 @@ export function getXpProgress(xp: number): number {
 }
 
 /* ------------------------------------------------------------------ */
-/* Mock Data                                                           */
+/* Badge Definitions (Source of truth for unlocking)                    */
 /* ------------------------------------------------------------------ */
-export const MOCK_USER: UserProfile = {
-  id: "u1",
-  name: "Sardor Alimov",
-  username: "sardor_alimov",
-  avatarUrl: null,
-  joinedAt: "2025-09-01",
-  rank: RANKS[3],
-  xp: 1420,
-  totalPoints: 3850,
-  streak: {
-    current: 12,
-    longest: 28,
-    todayCompleted: true,
-  },
-  stats: {
-    articlesSubmitted: 24,
-    casesAnalyzed: 47,
-    tasksCompleted: 136,
-    quizzesPassed: 18,
-    totalStudyHours: 214,
-    avgDailyMinutes: 45,
-  },
-}
-
-export const MOCK_BADGES: Badge[] = [
+export const BADGE_DEFINITIONS: Badge[] = [
   {
     id: "b1",
     title: "Birinchi qadam",
     description: "Birinchi maqolani yuborish",
     iconName: "Footprints",
     tier: "bronze",
-    unlockedAt: "2025-09-05",
-    progress: 100,
+    unlockedAt: null,
+    progress: 0,
     requirement: "1 ta maqola yuborish",
+    metricType: "stat",
+    statKey: "articlesSubmitted",
+    requirementValue: 1
   },
   {
     id: "b2",
@@ -147,9 +131,11 @@ export const MOCK_BADGES: Badge[] = [
     description: "7 kunlik seriyani to'ldirish",
     iconName: "Flame",
     tier: "silver",
-    unlockedAt: "2025-10-12",
-    progress: 100,
+    unlockedAt: null,
+    progress: 0,
     requirement: "7 kunlik seriya",
+    metricType: "streak",
+    requirementValue: 7
   },
   {
     id: "b3",
@@ -157,9 +143,12 @@ export const MOCK_BADGES: Badge[] = [
     description: "25 ta ishni tahlil qilish",
     iconName: "Brain",
     tier: "gold",
-    unlockedAt: "2026-01-20",
-    progress: 100,
+    unlockedAt: null,
+    progress: 0,
     requirement: "25 ta ish tahlili",
+    metricType: "stat",
+    statKey: "casesAnalyzed",
+    requirementValue: 25
   },
   {
     id: "b4",
@@ -167,9 +156,12 @@ export const MOCK_BADGES: Badge[] = [
     description: "100 ta vazifani bajarish",
     iconName: "Star",
     tier: "gold",
-    unlockedAt: "2026-02-10",
-    progress: 100,
+    unlockedAt: null,
+    progress: 0,
     requirement: "100 ta vazifa",
+    metricType: "stat",
+    statKey: "tasksCompleted",
+    requirementValue: 100
   },
   {
     id: "b5",
@@ -178,8 +170,10 @@ export const MOCK_BADGES: Badge[] = [
     iconName: "Trophy",
     tier: "platinum",
     unlockedAt: null,
-    progress: 40,
+    progress: 0,
     requirement: "30 kunlik seriya",
+    metricType: "streak",
+    requirementValue: 30
   },
   {
     id: "b6",
@@ -188,8 +182,11 @@ export const MOCK_BADGES: Badge[] = [
     iconName: "FileText",
     tier: "silver",
     unlockedAt: null,
-    progress: 48,
+    progress: 0,
     requirement: "50 ta maqola",
+    metricType: "stat",
+    statKey: "articlesSubmitted",
+    requirementValue: 50
   },
   {
     id: "b7",
@@ -198,72 +195,13 @@ export const MOCK_BADGES: Badge[] = [
     iconName: "Medal",
     tier: "platinum",
     unlockedAt: null,
-    progress: 13,
+    progress: 0,
     requirement: "90 kunlik seriya",
-  },
-  {
-    id: "b8",
-    title: "Huquqshunos",
-    description: "Barcha huquq sohalarida ish tahlil qilish",
-    iconName: "Scale",
-    tier: "gold",
-    unlockedAt: null,
-    progress: 66,
-    requirement: "6 ta soha",
-  },
+    metricType: "streak",
+    requirementValue: 90
+  }
 ]
 
-export const MOCK_DAILY_ACTIVITY: DailyActivity[] = [
-  { date: "Dush", minutes: 52, points: 45 },
-  { date: "Sesh", minutes: 38, points: 32 },
-  { date: "Chor", minutes: 65, points: 58 },
-  { date: "Pay", minutes: 41, points: 35 },
-  { date: "Jum", minutes: 70, points: 62 },
-  { date: "Shan", minutes: 25, points: 20 },
-  { date: "Yak", minutes: 48, points: 40 },
-]
-
-export const MOCK_HOURLY_ACTIVITY: HourlyActivity[] = [
-  { hour: "06", count: 2 },
-  { hour: "07", count: 5 },
-  { hour: "08", count: 12 },
-  { hour: "09", count: 18 },
-  { hour: "10", count: 22 },
-  { hour: "11", count: 15 },
-  { hour: "12", count: 8 },
-  { hour: "13", count: 10 },
-  { hour: "14", count: 20 },
-  { hour: "15", count: 25 },
-  { hour: "16", count: 19 },
-  { hour: "17", count: 14 },
-  { hour: "18", count: 11 },
-  { hour: "19", count: 16 },
-  { hour: "20", count: 22 },
-  { hour: "21", count: 18 },
-  { hour: "22", count: 8 },
-  { hour: "23", count: 3 },
-]
-
-export const MOCK_WEEKLY_STREAK: WeeklyStreak[] = [
-  { day: "Du", active: true },
-  { day: "Se", active: true },
-  { day: "Ch", active: true },
-  { day: "Pa", active: true },
-  { day: "Ju", active: true },
-  { day: "Sh", active: false },
-  { day: "Ya", active: true },
-]
-
-export const MOCK_LEADERBOARD: LeaderboardEntry[] = [
-  { rank: 1, name: "Nodira Karimova", username: "nodira_k", xp: 4200, level: 6, streak: 45 },
-  { rank: 2, name: "Jasur Toshmatov", username: "jasur_t", xp: 3100, level: 5, streak: 32 },
-  { rank: 3, name: "Malika Rahimova", username: "malika_r", xp: 2800, level: 5, streak: 22 },
-  { rank: 4, name: "Sardor Alimov", username: "sardor_alimov", xp: 1420, level: 4, streak: 12 },
-  { rank: 5, name: "Dilnoza Yusupova", username: "dilnoza_y", xp: 1100, level: 3, streak: 8 },
-  { rank: 6, name: "Bobur Sharipov", username: "bobur_sh", xp: 980, level: 3, streak: 15 },
-  { rank: 7, name: "Zarina Mirzaeva", username: "zarina_m", xp: 750, level: 2, streak: 5 },
-  { rank: 8, name: "Akmal Normatov", username: "akmal_n", xp: 520, level: 2, streak: 3 },
-]
 
 /* ------------------------------------------------------------------ */
 /* Tier styling                                                        */

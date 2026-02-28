@@ -1,16 +1,18 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import {
     Users,
     FileText,
     Scale,
-    DollarSign,
     MoreHorizontal,
     CheckCircle2,
     Clock,
     ArrowUpRight,
     Filter,
-    Download
+    Download,
+    Loader2,
+    BookOpen,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -36,95 +38,183 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { db } from "@/lib/firebase"
+import {
+    collection,
+    query,
+    where,
+    orderBy,
+    limit,
+    onSnapshot,
+    getCountFromServer,
+} from "firebase/firestore"
+import { formatRelativeTime } from "@/lib/date-utils"
 
-const stats = [
-    {
-        title: "Jami Talabalar",
-        value: "1,284",
-        change: "+12.5%",
-        trend: "up",
-        icon: Users,
-        color: "text-blue-600",
-        bg: "bg-blue-50"
-    },
-    {
-        title: "Kutilayotgan Maqolalar",
-        value: "24",
-        change: "+4.3%",
-        trend: "up",
-        icon: FileText,
-        color: "text-amber-600",
-        bg: "bg-amber-50"
-    },
-    {
-        title: "Faol Kazuslar",
-        value: "156",
-        change: "-2.1%",
-        trend: "down",
-        icon: Scale,
-        color: "text-teal-600",
-        bg: "bg-teal-50"
-    },
-    {
-        title: "Umumiy Daromad",
-        value: "$12,450",
-        change: "+18.2%",
-        trend: "up",
-        icon: DollarSign,
-        color: "text-emerald-600",
-        bg: "bg-emerald-50"
-    }
-]
+/* ------------------------------------------------------------------ */
+/* Types                                                               */
+/* ------------------------------------------------------------------ */
+interface AdminStat {
+    title: string
+    value: string
+    icon: React.ComponentType<{ className?: string }>
+    color: string
+    bg: string
+}
 
-const recentSubmissions = [
-    {
-        id: "1",
-        title: "Raqamli iqtisodiyotda huquqiy tartibga solish",
-        author: "Alisher Navoiy",
-        plagiarism: "12%",
-        ai: "8%",
-        status: "Tasdiqlangan",
-        date: "2 soat oldin"
-    },
-    {
-        id: "2",
-        title: "Sun'iy intellekt va mualliflik huquqi",
-        author: "Zulfiya Isroilova",
-        plagiarism: "5%",
-        ai: "15%",
-        status: "Kutilmoqda",
-        date: "5 soat oldin"
-    },
-    {
-        id: "3",
-        title: "Xalqaro tijorat arbitraji masalalari",
-        author: "Abdulla Qodiriy",
-        plagiarism: "24%",
-        ai: "4%",
-        status: "Kutilmoqda",
-        date: "1 kun oldin"
-    },
-    {
-        id: "4",
-        title: "O'zbekistonda ma'muriy islohotlar",
-        author: "Bobur Mirzo",
-        plagiarism: "8%",
-        ai: "2%",
-        status: "Tasdiqlangan",
-        date: "2 kun oldin"
-    },
-    {
-        id: "5",
-        title: "Smart-kontraktlar va ularning huquqiy tabiati",
-        author: "Oyxon Humoyun",
-        plagiarism: "15%",
-        ai: "32%",
-        status: "Kutilmoqda",
-        date: "3 kun oldin"
-    }
-]
+interface BlogSubmission {
+    id: string
+    title: string
+    authorName: string
+    status: string
+    createdAt: Date | null
+}
 
+/* ------------------------------------------------------------------ */
+/* Skeleton Components                                                 */
+/* ------------------------------------------------------------------ */
+function StatCardSkeleton() {
+    return (
+        <Card className="border-none shadow-sm shadow-slate-200/50 bg-white rounded-2xl overflow-hidden">
+            <CardContent className="p-6 animate-pulse">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 rounded-xl bg-slate-100" />
+                    <div className="w-14 h-6 rounded-full bg-slate-100" />
+                </div>
+                <div className="space-y-2">
+                    <div className="h-3 w-24 rounded bg-slate-100" />
+                    <div className="h-7 w-16 rounded bg-slate-100" />
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
+function TableRowSkeleton() {
+    return (
+        <TableRow className="border-slate-50">
+            <TableCell className="pl-6 py-4">
+                <div className="animate-pulse space-y-2">
+                    <div className="h-4 w-48 rounded bg-slate-100" />
+                    <div className="h-3 w-24 rounded bg-slate-100" />
+                </div>
+            </TableCell>
+            <TableCell className="py-4">
+                <div className="animate-pulse flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-slate-100" />
+                    <div className="h-3 w-24 rounded bg-slate-100" />
+                </div>
+            </TableCell>
+            <TableCell className="py-4"><div className="animate-pulse h-3 w-10 rounded bg-slate-100" /></TableCell>
+            <TableCell className="py-4"><div className="animate-pulse h-3 w-10 rounded bg-slate-100" /></TableCell>
+            <TableCell className="py-4"><div className="animate-pulse h-5 w-20 rounded bg-slate-100" /></TableCell>
+            <TableCell className="text-right pr-6 py-4"><div className="animate-pulse h-8 w-8 rounded bg-slate-100 ml-auto" /></TableCell>
+        </TableRow>
+    )
+}
+
+/* ================================================================== */
+/* Admin Dashboard Page                                                */
+/* ================================================================== */
 export default function AdminDashboardPage() {
+    const [stats, setStats] = useState<AdminStat[]>([])
+    const [submissions, setSubmissions] = useState<BlogSubmission[]>([])
+    const [loadingStats, setLoadingStats] = useState(true)
+    const [loadingTable, setLoadingTable] = useState(true)
+
+    /* ------ Fetch Aggregated Stats ------ */
+    useEffect(() => {
+        async function fetchStats() {
+            try {
+                const [usersSnap, pendingBlogsSnap, casesSnap, allBlogsSnap] = await Promise.all([
+                    getCountFromServer(collection(db, "users")),
+                    getCountFromServer(query(collection(db, "blogs"), where("status", "==", "pending"))),
+                    getCountFromServer(collection(db, "cases")),
+                    getCountFromServer(collection(db, "blogs")),
+                ])
+
+                setStats([
+                    {
+                        title: "Jami Talabalar",
+                        value: usersSnap.data().count.toLocaleString(),
+                        icon: Users,
+                        color: "text-blue-600",
+                        bg: "bg-blue-50"
+                    },
+                    {
+                        title: "Kutilayotgan Maqolalar",
+                        value: String(pendingBlogsSnap.data().count),
+                        icon: FileText,
+                        color: "text-amber-600",
+                        bg: "bg-amber-50"
+                    },
+                    {
+                        title: "Faol Kazuslar",
+                        value: String(casesSnap.data().count),
+                        icon: Scale,
+                        color: "text-teal-600",
+                        bg: "bg-teal-50"
+                    },
+                    {
+                        title: "Jami Maqolalar",
+                        value: String(allBlogsSnap.data().count),
+                        icon: BookOpen,
+                        color: "text-emerald-600",
+                        bg: "bg-emerald-50"
+                    }
+                ])
+            } catch (err) {
+                console.error("Error fetching admin stats:", err)
+            } finally {
+                setLoadingStats(false)
+            }
+        }
+
+        fetchStats()
+    }, [])
+
+    /* ------ Real-time Recent Blog Submissions ------ */
+    useEffect(() => {
+        const q = query(
+            collection(db, "blogs"),
+            orderBy("createdAt", "desc"),
+            limit(5)
+        )
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const rows: BlogSubmission[] = snapshot.docs.map((docSnap) => {
+                const data = docSnap.data()
+                return {
+                    id: docSnap.id,
+                    title: data.title || "Nomsiz maqola",
+                    authorName: data.authorName || data.author || "Noma'lum muallif",
+                    status: data.status || "pending",
+                    createdAt: data.createdAt?.toDate?.() || null,
+                }
+            })
+            setSubmissions(rows)
+            setLoadingTable(false)
+        }, (error) => {
+            console.error("Error fetching recent submissions:", error)
+            setLoadingTable(false)
+        })
+
+        return () => unsubscribe()
+    }, [])
+
+    /* ------ Status helpers ------ */
+    function statusLabel(status: string) {
+        if (status === "approved" || status === "published") return "Tasdiqlangan"
+        if (status === "rejected") return "Rad etilgan"
+        return "Kutilmoqda"
+    }
+
+    function statusVariant(status: string) {
+        const label = statusLabel(status)
+        if (label === "Tasdiqlangan") return "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+        if (label === "Rad etilgan") return "bg-rose-50 text-rose-700 hover:bg-rose-100"
+        return "bg-amber-50 text-amber-700 hover:bg-amber-100"
+    }
+
     return (
         <div className="animate-in fade-in duration-700">
             {/* Page Header */}
@@ -147,26 +237,24 @@ export default function AdminDashboardPage() {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                {stats.map((stat, index) => (
-                    <Card key={index} className="border-none shadow-sm shadow-slate-200/50 bg-white hover:shadow-md transition-shadow duration-300 rounded-2xl overflow-hidden group">
-                        <CardContent className="p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} transition-transform group-hover:scale-110 duration-300`}>
-                                    <stat.icon className="w-6 h-6" />
+                {loadingStats
+                    ? Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
+                    : stats.map((stat, index) => (
+                        <Card key={index} className="border-none shadow-sm shadow-slate-200/50 bg-white hover:shadow-md transition-shadow duration-300 rounded-2xl overflow-hidden group">
+                            <CardContent className="p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} transition-transform group-hover:scale-110 duration-300`}>
+                                        <stat.icon className="w-6 h-6" />
+                                    </div>
                                 </div>
-                                <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${stat.trend === 'up' ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'
-                                    }`}>
-                                    {stat.change}
-                                    <ArrowUpRight className={`w-3 h-3 ${stat.trend === 'down' ? 'rotate-90' : ''}`} />
+                                <div>
+                                    <p className="text-sm font-medium text-slate-500 mb-1">{stat.title}</p>
+                                    <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{stat.value}</h3>
                                 </div>
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500 mb-1">{stat.title}</p>
-                                <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{stat.value}</h3>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
+                            </CardContent>
+                        </Card>
+                    ))
+                }
             </div>
 
             {/* Table Section */}
@@ -186,83 +274,76 @@ export default function AdminDashboardPage() {
                             <TableRow className="hover:bg-transparent border-slate-100">
                                 <TableHead className="w-[400px] font-semibold text-slate-600 pl-6 py-4">Maqola nomi</TableHead>
                                 <TableHead className="font-semibold text-slate-600 py-4">Muallif</TableHead>
-                                <TableHead className="font-semibold text-slate-600 py-4">Plagiat %</TableHead>
-                                <TableHead className="font-semibold text-slate-600 py-4">AI %</TableHead>
                                 <TableHead className="font-semibold text-slate-600 py-4">Holati</TableHead>
                                 <TableHead className="text-right font-semibold text-slate-600 pr-6 py-4">Harakat</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {recentSubmissions.map((submission) => (
-                                <TableRow key={submission.id} className="group hover:bg-slate-50/30 border-slate-50 transition-colors">
-                                    <TableCell className="pl-6 py-4">
-                                        <div className="flex flex-col">
-                                            <span className="font-medium text-slate-800 line-clamp-1">{submission.title}</span>
-                                            <span className="text-xs text-slate-400 mt-1 flex items-center gap-1">
-                                                <Clock className="w-3 h-3" />
-                                                {submission.date}
-                                            </span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="py-4">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600 border border-slate-200">
-                                                {submission.author[0]}
-                                            </div>
-                                            <span className="text-sm text-slate-600">{submission.author}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="py-4">
-                                        <div className="flex items-center gap-2">
-                                            <div className={`w-2 h-2 rounded-full ${parseInt(submission.plagiarism) > 20 ? 'bg-rose-500' : 'bg-emerald-500'
-                                                }`} />
-                                            <span className="text-sm font-medium text-slate-700">{submission.plagiarism}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="py-4">
-                                        <div className="flex items-center gap-2">
-                                            <div className={`w-2 h-2 rounded-full ${parseInt(submission.ai) > 30 ? 'bg-amber-500' : 'bg-teal-500'
-                                                }`} />
-                                            <span className="text-sm font-medium text-slate-700">{submission.ai}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="py-4">
-                                        <Badge variant="secondary" className={cn(
-                                            "rounded-lg font-medium text-[11px] px-2 py-0.5",
-                                            submission.status === "Tasdiqlangan"
-                                                ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                                                : "bg-amber-50 text-amber-700 hover:bg-amber-100"
-                                        )}>
-                                            {submission.status === "Tasdiqlangan" ? (
-                                                <CheckCircle2 className="w-3 h-3 mr-1" />
-                                            ) : (
-                                                <Clock className="w-3 h-3 mr-1" />
-                                            )}
-                                            {submission.status}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right pr-6 py-4">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-slate-100 group-hover:opacity-100 transition-all">
-                                                    <MoreHorizontal className="w-4 h-4 text-slate-400" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-40 rounded-xl border-slate-200 p-1.5 shadow-xl shadow-slate-200/50">
-                                                <DropdownMenuItem className="rounded-lg cursor-pointer focus:bg-teal-50 focus:text-teal-700">
-                                                    Ko'rish
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem className="rounded-lg cursor-pointer focus:bg-teal-50 focus:text-teal-700">
-                                                    Tasdiqlash
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem className="rounded-lg cursor-pointer focus:bg-rose-50 focus:text-rose-600">
-                                                    Rad etish
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                            {loadingTable
+                                ? Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={i} />)
+                                : submissions.length === 0
+                                    ? (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="text-center py-12 text-slate-400">
+                                                Hali maqolalar yuborilmagan
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                    : submissions.map((submission) => (
+                                        <TableRow key={submission.id} className="group hover:bg-slate-50/30 border-slate-50 transition-colors">
+                                            <TableCell className="pl-6 py-4">
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium text-slate-800 line-clamp-1">{submission.title}</span>
+                                                    <span className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                                                        <Clock className="w-3 h-3" />
+                                                        {submission.createdAt ? formatRelativeTime(submission.createdAt) : "Noma'lum"}
+                                                    </span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="py-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600 border border-slate-200">
+                                                        {submission.authorName[0]?.toUpperCase()}
+                                                    </div>
+                                                    <span className="text-sm text-slate-600">{submission.authorName}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="py-4">
+                                                <Badge variant="secondary" className={cn(
+                                                    "rounded-lg font-medium text-[11px] px-2 py-0.5",
+                                                    statusVariant(submission.status)
+                                                )}>
+                                                    {statusLabel(submission.status) === "Tasdiqlangan" ? (
+                                                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                                                    ) : (
+                                                        <Clock className="w-3 h-3 mr-1" />
+                                                    )}
+                                                    {statusLabel(submission.status)}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right pr-6 py-4">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-slate-100 group-hover:opacity-100 transition-all">
+                                                            <MoreHorizontal className="w-4 h-4 text-slate-400" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="w-40 rounded-xl border-slate-200 p-1.5 shadow-xl shadow-slate-200/50">
+                                                        <DropdownMenuItem className="rounded-lg cursor-pointer focus:bg-teal-50 focus:text-teal-700">
+                                                            Ko'rish
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem className="rounded-lg cursor-pointer focus:bg-teal-50 focus:text-teal-700">
+                                                            Tasdiqlash
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem className="rounded-lg cursor-pointer focus:bg-rose-50 focus:text-rose-600">
+                                                            Rad etish
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                            }
                         </TableBody>
                     </Table>
                 </CardContent>

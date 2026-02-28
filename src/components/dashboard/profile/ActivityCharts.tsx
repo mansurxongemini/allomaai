@@ -17,11 +17,14 @@ import {
 } from "@/components/ui/chart"
 import type { DailyActivity, HourlyActivity } from "@/lib/gamification"
 
+import { Skeleton } from "@/components/ui/skeleton"
+
 /* ------------------------------------------------------------------ */
 /* Weekly Activity Bar Chart                                           */
 /* ------------------------------------------------------------------ */
 interface WeeklyChartProps {
-  data: DailyActivity[]
+  data?: DailyActivity[]
+  isLoading?: boolean
 }
 
 const weeklyConfig = {
@@ -29,7 +32,23 @@ const weeklyConfig = {
   points: { label: "Ballar", color: "#f59e0b" },
 }
 
-export function WeeklyActivityChart({ data }: WeeklyChartProps) {
+export function WeeklyActivityChart({ data, isLoading }: WeeklyChartProps) {
+  if (isLoading || !data) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <Skeleton className="w-8 h-8 rounded-lg" />
+          <div className="space-y-1">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+        </div>
+        <Skeleton className="h-4 w-32 mb-3" />
+        <Skeleton className="h-[200px] sm:h-[240px] w-full" />
+      </div>
+    )
+  }
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
       <div className="flex items-center gap-2 mb-4">
@@ -81,14 +100,36 @@ export function WeeklyActivityChart({ data }: WeeklyChartProps) {
 /* Hourly Peak Activity Area Chart                                     */
 /* ------------------------------------------------------------------ */
 interface HourlyChartProps {
-  data: HourlyActivity[]
+  data?: HourlyActivity[]
+  isLoading?: boolean
 }
 
 const hourlyConfig = {
   count: { label: "Faollik", color: "#0d9488" },
 }
 
-export function HourlyActivityChart({ data }: HourlyChartProps) {
+export function HourlyActivityChart({ data, isLoading }: HourlyChartProps) {
+  if (isLoading || !data || data.length === 0) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <div className="flex items-center gap-2">
+            <Skeleton className="w-8 h-8 rounded-lg" />
+            <div className="space-y-1">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-3 w-32" />
+            </div>
+          </div>
+          <div className="text-right space-y-1">
+            <Skeleton className="h-6 w-16 ml-auto" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+        </div>
+        <Skeleton className="h-[180px] sm:h-[220px] w-full" />
+      </div>
+    )
+  }
+
   const peak = data.reduce(
     (max, d) => (d.count > max.count ? d : max),
     data[0]

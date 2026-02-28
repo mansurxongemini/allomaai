@@ -11,8 +11,11 @@ import {
 import { cn } from "@/lib/utils"
 import type { UserProfile } from "@/lib/gamification"
 
+import { Skeleton } from "@/components/ui/skeleton"
+
 interface StatsGridProps {
-  stats: UserProfile["stats"]
+  stats?: UserProfile["stats"]
+  isLoading?: boolean
 }
 
 const statConfig = [
@@ -68,7 +71,22 @@ const statConfig = [
   },
 ]
 
-export function StatsGrid({ stats }: StatsGridProps) {
+export function StatsGrid({ stats, isLoading }: StatsGridProps) {
+  if (isLoading || !stats) {
+    return (
+      <section>
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3 sm:mb-4">
+          Faoliyat statistikasi
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 w-full rounded-2xl" />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section>
       <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3 sm:mb-4">
@@ -77,7 +95,7 @@ export function StatsGrid({ stats }: StatsGridProps) {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {statConfig.map((s) => {
           const Icon = s.icon
-          const value = stats[s.key]
+          const value = stats[s.key as keyof UserProfile["stats"]]
           return (
             <div
               key={s.key}

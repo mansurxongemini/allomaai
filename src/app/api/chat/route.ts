@@ -1,7 +1,7 @@
 import { AI_MODEL } from '@/lib/ai/model';
 import { PROMPT } from '@/lib/ai/prompts';
-import { errorHandler, getMostRecentUserMessage } from '@/lib/utils';
-import { createIdGenerator, streamText } from 'ai';
+import { getMostRecentUserMessage } from '@/lib/utils';
+import { streamText } from 'ai';
 
 export const maxDuration = 50;
 
@@ -18,19 +18,18 @@ export async function POST(req: Request) {
     }
 
     const result = streamText({
-      model: AI_MODEL,
+      model: AI_MODEL as any,
       system: PROMPT,
       messages,
-      experimental_generateMessageId: createIdGenerator({
-        prefix: 'msgs',
-      }),
     });
 
-    return result.toDataStreamResponse({
-      getErrorMessage:
-        process.env.NODE_ENV === 'development' ? errorHandler : undefined,
-    });
+    return result.toDataStreamResponse();
   } catch (error) {
-    console.log(error);
+    console.error('[/api/chat] Error:', error);
+    const message = error instanceof Error ? error.message : 'Internal server error';
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }

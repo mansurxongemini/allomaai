@@ -13,7 +13,8 @@ import {
     Bell,
     Search,
     Headset,
-    Send
+    Send,
+    Lightbulb
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -23,6 +24,7 @@ import { auth } from "@/lib/firebase"
 const navItems = [
     { label: "Asosiy", href: "/admin", icon: LayoutDashboard },
     { label: "Darslar", href: "/admin/subjects", icon: BookOpen },
+    { label: "Metodlar", href: "/admin/methods", icon: Lightbulb },
     { label: "Kazuslar", href: "/admin/cases", icon: Scale },
     { label: "Maqolalar", href: "/admin/articles", icon: FileText },
     { label: "Bloglar", href: "/admin/blogs", icon: PenTool },

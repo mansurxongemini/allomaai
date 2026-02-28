@@ -25,9 +25,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import AdvancedEditor from "@/components/ui/editor/AdvancedEditor"
-import { addTopic, getTopics, uploadMindmap, updateTopic, deleteTopic } from "@/services/firestore"
+import { getTopics, updateTopic, deleteTopic } from "@/services/firestore"
 import { Topic } from "@/types"
 import { cn } from "@/lib/utils"
 
@@ -37,20 +35,6 @@ export default function SubjectDetailPage() {
     const [topics, setTopics] = useState<Topic[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
-    const [showAddModal, setShowAddModal] = useState(false)
-    const [editingTopicId, setEditingTopicId] = useState<string | null>(null)
-
-    // New Topic State
-    const [newTopic, setNewTopic] = useState({
-        title: "",
-        content: "",
-        firstPrinciples: "",
-        order: 1,
-        mindmapUrl: ""
-    })
-    const [mindmapFile, setMindmapFile] = useState<File | null>(null)
-    const [uploadingImage, setUploadingImage] = useState(false)
-
     useEffect(() => {
         if (subjectId) {
             loadTopics()
@@ -66,60 +50,6 @@ export default function SubjectDetailPage() {
         } finally {
             setIsLoading(false)
         }
-    }
-
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0]
-            setMindmapFile(file)
-
-            setUploadingImage(true)
-            try {
-                const url = await uploadMindmap(file)
-                setNewTopic({ ...newTopic, mindmapUrl: url })
-            } catch (error) {
-                console.error("Upload error:", error)
-            } finally {
-                setUploadingImage(false)
-            }
-        }
-    }
-
-    const handleSaveTopic = async () => {
-        if (!newTopic.title) return
-
-        setIsSaving(true)
-        try {
-            if (editingTopicId) {
-                await updateTopic(subjectId as string, editingTopicId, newTopic)
-            } else {
-                await addTopic(subjectId as string, {
-                    ...newTopic,
-                    order: topics.length + 1
-                })
-            }
-            setShowAddModal(false)
-            setEditingTopicId(null)
-            setNewTopic({ title: "", content: "", firstPrinciples: "", order: 1, mindmapUrl: "" })
-            setMindmapFile(null)
-            loadTopics()
-        } catch (error) {
-            console.error("Save error:", error)
-        } finally {
-            setIsSaving(false)
-        }
-    }
-
-    const handleEditTopic = (topic: Topic) => {
-        setEditingTopicId(topic.id)
-        setNewTopic({
-            title: topic.title,
-            content: topic.content,
-            firstPrinciples: topic.firstPrinciples,
-            order: topic.order,
-            mindmapUrl: topic.mindmapUrl || ""
-        })
-        setShowAddModal(true)
     }
 
     const handleDeleteTopic = async (topicId: string) => {
@@ -170,129 +100,13 @@ export default function SubjectDetailPage() {
                     </div>
                 </div>
 
-                <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-                    <DialogTrigger asChild>
-                        <Button
-                            className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-lg shadow-teal-600/20 gap-2"
-                            onClick={() => {
-                                setEditingTopicId(null)
-                                setNewTopic({ title: "", content: "", firstPrinciples: "", order: 1, mindmapUrl: "" })
-                            }}
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span>Yangi mavzu</span>
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 border-none rounded-2xl overflow-hidden shadow-2xl">
-                        <div className="bg-teal-600 p-8 text-white relative">
-                            <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-                                {editingTopicId ? <Edit2 className="w-32 h-32" /> : <Plus className="w-32 h-32" />}
-                            </div>
-                            <DialogHeader>
-                                <DialogTitle className="text-2xl font-bold">
-                                    {editingTopicId ? "Mavzuni tahrirlash" : "Yangi mavzu yaratish"}
-                                </DialogTitle>
-                                <DialogDescription className="text-teal-100 mt-1">
-                                    Mavzu tarkibi, metodikasi va vizual materiallarini {editingTopicId ? "o'zgartiring" : "qo'shing"}.
-                                </DialogDescription>
-                            </DialogHeader>
-                        </div>
-
-                        <div className="p-8 space-y-8 bg-white">
-                            {/* Basic Info */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <Label className="text-slate-700 font-semibold flex items-center gap-2">
-                                        <FileText className="w-4 h-4 text-teal-600" />
-                                        Mavzu nomi
-                                    </Label>
-                                    <Input
-                                        placeholder="Mavzu sarlavhasini kiriting..."
-                                        value={newTopic.title}
-                                        onChange={(e) => setNewTopic({ ...newTopic, title: e.target.value })}
-                                        className="h-12 border-slate-200 focus:ring-teal-500 rounded-xl"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-slate-700 font-semibold flex items-center gap-2">
-                                        <ImageIcon className="w-4 h-4 text-teal-600" />
-                                        Mindmap (Rasm)
-                                    </Label>
-                                    <div className="flex gap-3">
-                                        <div
-                                            className={cn(
-                                                "flex-1 h-12 border border-dashed border-slate-300 rounded-xl flex items-center px-4 cursor-pointer hover:bg-slate-50 transition-colors",
-                                                newTopic.mindmapUrl && "border-teal-300 bg-teal-50"
-                                            )}
-                                            onClick={() => document.getElementById('map-upload')?.click()}
-                                        >
-                                            <Upload className="w-4 h-4 text-slate-400 mr-2" />
-                                            <span className="text-sm text-slate-500 truncate">
-                                                {uploadingImage ? "Yuklanmoqda..." : (mindmapFile?.name || "Rasm tanlang...")}
-                                            </span>
-                                            <input
-                                                id="map-upload"
-                                                type="file"
-                                                className="hidden"
-                                                accept="image/*"
-                                                onChange={handleFileUpload}
-                                            />
-                                        </div>
-                                        {newTopic.mindmapUrl && (
-                                            <Badge className="bg-emerald-50 text-emerald-600 border-none flex items-center gap-1 rounded-xl px-3">
-                                                <CheckCircle2 className="w-3 h-3" />
-                                                Yuklandi
-                                            </Badge>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Content */}
-                            <div className="space-y-3">
-                                <Label className="text-slate-700 font-semibold flex items-center gap-2">
-                                    <Layout className="w-4 h-4 text-teal-600" />
-                                    Asosiy tushuntirish
-                                </Label>
-                                <AdvancedEditor
-                                    value={newTopic.content}
-                                    onChange={(val) => setNewTopic({ ...newTopic, content: val })}
-                                />
-                            </div>
-
-                            {/* Methodology */}
-                            <div className="space-y-3 p-6 bg-slate-50 rounded-2xl border border-slate-200">
-                                <Label className="text-slate-700 font-bold flex items-center gap-2 text-base">
-                                    <Sparkles className="w-5 h-5 text-amber-500" />
-                                    First Principles / Metodika (Justin Sung uslubi)
-                                </Label>
-                                <p className="text-sm text-slate-500 mb-4">Ushbu qismda mavzuni "Justin Sung" uslubida chuqurlashtirilgan tahlili yoziladi.</p>
-                                <AdvancedEditor
-                                    value={newTopic.firstPrinciples}
-                                    onChange={(val) => setNewTopic({ ...newTopic, firstPrinciples: val })}
-                                />
-                            </div>
-
-                            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                                <Button
-                                    variant="ghost"
-                                    className="rounded-xl px-6"
-                                    onClick={() => setShowAddModal(false)}
-                                >
-                                    Bekor qilish
-                                </Button>
-                                <Button
-                                    className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl px-8 shadow-lg shadow-teal-600/20 gap-2"
-                                    onClick={handleSaveTopic}
-                                    disabled={isSaving || uploadingImage}
-                                >
-                                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                    <span>Mavzuni saqlash</span>
-                                </Button>
-                            </div>
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                <Button
+                    className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-lg shadow-teal-600/20 gap-2"
+                    onClick={() => router.push(`/admin/subjects/${subjectId}/new`)}
+                >
+                    <Plus className="w-4 h-4" />
+                    <span>Yangi mavzu</span>
+                </Button>
             </div>
 
             {/* List of Topics */}
@@ -311,7 +125,7 @@ export default function SubjectDetailPage() {
                         <p className="text-slate-500">Ushbu fanga hali hech qanday mavzu qo'shilmagan. Birinchi mavzuni qo'shing.</p>
                         <Button
                             className="bg-teal-100 text-teal-700 hover:bg-teal-200 border-none rounded-xl"
-                            onClick={() => setShowAddModal(true)}
+                            onClick={() => router.push(`/admin/subjects/${subjectId}/new`)}
                         >
                             Yangi mavzu qo'shish
                         </Button>
@@ -379,7 +193,7 @@ export default function SubjectDetailPage() {
                                         variant="ghost"
                                         size="icon"
                                         className="w-10 h-10 rounded-xl text-slate-400 hover:text-teal-600 hover:bg-teal-50"
-                                        onClick={() => handleEditTopic(topic)}
+                                        onClick={() => router.push(`/admin/subjects/${subjectId}/${topic.id}`)}
                                     >
                                         <Edit2 className="w-5 h-5" />
                                     </Button>

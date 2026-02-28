@@ -21,8 +21,6 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const INTERVAL_OPTIONS = [1, 3, 7, 15, 30, 90]
-
 const ICON_OPTIONS = [
   { name: "Book", icon: Book },
   { name: "Scale", icon: Scale },
@@ -39,9 +37,8 @@ interface TaskCreationModalProps {
   onOpenChange: (open: boolean) => void
   onSave: (task: {
     title: string
-    type: "single" | "interval"
-    intervals: number[]
-    iconName: string
+    type: "once" | "spaced"
+    icon: string
     note: string
   }) => void
 }
@@ -52,30 +49,21 @@ export function TaskCreationModal({
   onSave,
 }: TaskCreationModalProps) {
   const [title, setTitle] = useState("")
-  const [type, setType] = useState<"single" | "interval">("single")
-  const [selectedIntervals, setSelectedIntervals] = useState<number[]>([1, 7])
+  const [type, setType] = useState<"once" | "spaced">("once")
   const [selectedIcon, setSelectedIcon] = useState("Book")
   const [note, setNote] = useState("")
-
-  function toggleInterval(day: number) {
-    setSelectedIntervals((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-    )
-  }
 
   function handleSave() {
     if (!title.trim()) return
     onSave({
       title: title.trim(),
       type,
-      intervals: type === "interval" ? selectedIntervals : [],
-      iconName: selectedIcon,
+      icon: selectedIcon,
       note: note.trim(),
     })
     // Reset form
     setTitle("")
-    setType("single")
-    setSelectedIntervals([1, 7])
+    setType("once")
     setSelectedIcon("Book")
     setNote("")
     onOpenChange(false)
@@ -83,8 +71,7 @@ export function TaskCreationModal({
 
   function handleCancel() {
     setTitle("")
-    setType("single")
-    setSelectedIntervals([1, 7])
+    setType("once")
     setSelectedIcon("Book")
     setNote("")
     onOpenChange(false)
@@ -125,12 +112,12 @@ export function TaskCreationModal({
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-slate-700">Turi</label>
             <div className="grid grid-cols-2 gap-3">
-                <button
+              <button
                 type="button"
-                onClick={() => setType("single")}
+                onClick={() => setType("once")}
                 className={cn(
                   "flex flex-col items-center gap-1 sm:gap-1.5 rounded-xl border-2 px-3 sm:px-4 py-3 sm:py-4 text-sm transition-all duration-200",
-                  type === "single"
+                  type === "once"
                     ? "border-teal-600 bg-teal-50 text-teal-700"
                     : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50"
                 )}
@@ -142,10 +129,10 @@ export function TaskCreationModal({
               </button>
               <button
                 type="button"
-                onClick={() => setType("interval")}
+                onClick={() => setType("spaced")}
                 className={cn(
                   "flex flex-col items-center gap-1 sm:gap-1.5 rounded-xl border-2 px-3 sm:px-4 py-3 sm:py-4 text-sm transition-all duration-200",
-                  type === "interval"
+                  type === "spaced"
                     ? "border-teal-600 bg-teal-50 text-teal-700"
                     : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50"
                 )}
@@ -158,32 +145,13 @@ export function TaskCreationModal({
             </div>
           </div>
 
-          {/* Interval Selector — visible only when type is "interval" */}
-          {type === "interval" && (
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-slate-700">
-                Takrorlash intervallari (kunlar)
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {INTERVAL_OPTIONS.map((day) => {
-                  const isActive = selectedIntervals.includes(day)
-                  return (
-                    <button
-                      key={day}
-                      type="button"
-                      onClick={() => toggleInterval(day)}
-                      className={cn(
-                        "rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all duration-200",
-                        isActive
-                          ? "bg-teal-600 text-white shadow-sm"
-                          : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
-                      )}
-                    >
-                      {day} kun
-                    </button>
-                  )
-                })}
-              </div>
+          {/* Interval info — visible only when type is "spaced" */}
+          {type === "spaced" && (
+            <div className="rounded-xl border border-teal-100 bg-teal-50 px-4 py-3">
+              <p className="text-xs text-teal-700 font-medium mb-1">Avtomatik takrorlash jadval:</p>
+              <p className="text-xs text-teal-600">
+                1-kun → 3-kun → 7-kun → 15-kun → 30-kun
+              </p>
             </div>
           )}
 

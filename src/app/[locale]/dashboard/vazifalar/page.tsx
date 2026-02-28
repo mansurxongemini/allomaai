@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import {
   Plus,
   Book,
@@ -14,9 +14,21 @@ import {
   Clock,
   Repeat,
   CalendarClock,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { TaskCreationModal } from "@/components/dashboard/TaskCreationModal"
+import { useAuth } from "@/context/AuthContext"
+import {
+  Task,
+  createTask,
+  completeTask,
+  subscribeToActiveTasks,
+  formatReviewDate,
+  isToday,
+} from "@/lib/firebase/tasks"
+import { addXP, incrementStat } from "@/lib/firebase/gamification"
 
 /* ------------------------------------------------------------------ */
 /* Icon Resolver                                                       */
@@ -37,129 +49,103 @@ function resolveIcon(name: string) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Task Interface & Mock Data                                          */
-/* ------------------------------------------------------------------ */
-interface Task {
-  id: string
-  title: string
-  type: "single" | "interval"
-  intervals: number[]
-  iconName: string
-  nextDueDate: string
-  note: string
-}
-
-const initialMockTasks: Task[] = [
-  {
-    id: "1",
-    title: "Jinoyat huquqi — 15-bob takrorlash",
-    type: "interval",
-    intervals: [1, 3, 7],
-    iconName: "Gavel",
-    nextDueDate: "Ertaga",
-    note: "Qasd va ehtiyotsizlik farqlari, javobgarlik turlari.",
-  },
-  {
-    id: "2",
-    title: "Fuqarolik kodeksi — Shartnoma turlari",
-    type: "interval",
-    intervals: [1, 7, 30],
-    iconName: "Scale",
-    nextDueDate: "3 kundan so'ng",
-    note: "Oldi-sotdi, ijaraga berish, xizmat ko'rsatish shartnomalarini taqqoslash.",
-  },
-  {
-    id: "3",
-    title: "Konstitutsiyaviy huquq — Inson huquqlari",
-    type: "interval",
-    intervals: [3, 7, 15],
-    iconName: "ShieldCheck",
-    nextDueDate: "Bugun",
-    note: "Konstitutsiya 18-42 moddalarini yodlash va misollar bilan mustahkamlash.",
-  },
-  {
-    id: "4",
-    title: "Xalqaro huquq — BMT Nizomi",
-    type: "single",
-    intervals: [],
-    iconName: "Landmark",
-    nextDueDate: "7 kundan so'ng",
-    note: "BMT Xavfsizlik Kengashi vakolatlari va hal qilish mexanizmlarini o'rganish.",
-  },
-  {
-    id: "5",
-    title: "Mehnat huquqi — Ish vaqti va dam olish",
-    type: "interval",
-    intervals: [1, 3, 7, 30],
-    iconName: "Book",
-    nextDueDate: "Ertaga",
-    note: "Qonunda belgilangan ish soatlari, ta'til kunlari, dam olish huquqlari.",
-  },
-  {
-    id: "6",
-    title: "Ma'muriy javobgarlik turlari",
-    type: "interval",
-    intervals: [7, 15, 90],
-    iconName: "FileText",
-    nextDueDate: "15 kundan so'ng",
-    note: "Jarima, ogohlantirish, maxsus huquqni cheklash turlarini takrorlash.",
-  },
-  {
-    id: "7",
-    title: "Huquqiy atamalar lug'ati — Lotincha iboralar",
-    type: "single",
-    intervals: [],
-    iconName: "ScrollText",
-    nextDueDate: "5 kundan so'ng",
-    note: "Habeas corpus, de facto, bona fide, prima facie kabi atamalar.",
-  },
-  {
-    id: "8",
-    title: "Mantiq va argumentatsiya usullari",
-    type: "interval",
-    intervals: [1, 7],
-    iconName: "Brain",
-    nextDueDate: "Bugun",
-    note: "Deduktiv va induktiv xulosalar, mantiqiy xatolar tahlili.",
-  },
-]
-
-/* ------------------------------------------------------------------ */
 /* Due badge color helper                                              */
 /* ------------------------------------------------------------------ */
-function dueBadgeClasses(due: string) {
-  if (due === "Bugun")
-    return "bg-teal-50 text-teal-700 border-teal-200"
-  if (due === "Ertaga")
-    return "bg-amber-50 text-amber-700 border-amber-200"
+function dueBadgeClasses(label: string) {
+  if (label === "Bugun") return "bg-teal-50 text-teal-700 border-teal-200"
+  if (label === "Ertaga") return "bg-amber-50 text-amber-700 border-amber-200"
   return "bg-slate-100 text-slate-500 border-slate-200"
+}
+
+/* ------------------------------------------------------------------ */
+/* Skeleton Card                                                       */
+/* ------------------------------------------------------------------ */
+function SkeletonCard() {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 animate-pulse">
+      <div className="flex items-start gap-3">
+        <div className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 rounded-xl bg-slate-100" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 w-3/4 rounded bg-slate-100" />
+          <div className="h-3 w-1/2 rounded bg-slate-100" />
+        </div>
+      </div>
+      <div className="mt-3 space-y-1.5">
+        <div className="h-3 w-full rounded bg-slate-100" />
+        <div className="h-3 w-4/5 rounded bg-slate-100" />
+      </div>
+    </div>
+  )
 }
 
 /* ================================================================== */
 /* Page Component                                                      */
 /* ================================================================== */
 export default function VazifalarPage() {
-  const [tasks, setTasks] = useState<Task[]>(initialMockTasks)
+  const { currentUser } = useAuth()
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
+  const [completingId, setCompletingId] = useState<string | null>(null)
 
-  function handleCreateTask(data: {
+  /* ------ Real-time listener ------ */
+  useEffect(() => {
+    if (!currentUser?.uid) {
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    const unsubscribe = subscribeToActiveTasks(currentUser.uid, (fetchedTasks) => {
+      setTasks(fetchedTasks)
+      setLoading(false)
+    })
+
+    return () => unsubscribe()
+  }, [currentUser?.uid])
+
+  /* ------ Create task ------ */
+  async function handleCreateTask(data: {
     title: string
-    type: "single" | "interval"
-    intervals: number[]
-    iconName: string
+    type: "once" | "spaced"
+    icon: string
     note: string
   }) {
-    const newTask: Task = {
-      id: String(Date.now()),
-      ...data,
-      nextDueDate: data.type === "single" ? "7 kundan so'ng" : "Ertaga",
-    }
-    setTasks((prev) => [newTask, ...prev])
+    if (!currentUser?.uid) return
+    await createTask(currentUser.uid, data)
   }
 
-  const todayTasks = tasks.filter((t) => t.nextDueDate === "Bugun")
-  const upcomingTasks = tasks.filter((t) => t.nextDueDate !== "Bugun")
+  /* ------ Complete task (spaced repetition engine + gamification) ------ */
+  const handleCompleteTask = useCallback(
+    async (task: Task) => {
+      if (!currentUser?.uid || completingId) return
+      setCompletingId(task.id)
 
+      try {
+        await completeTask(task)
+
+        if (task.type === "once") {
+          // Gamification: XP + stat update only when truly "done"
+          await addXP(currentUser.uid, 10, "task_completed", { taskId: task.id })
+          await incrementStat(currentUser.uid, "tasksCompleted")
+        } else {
+          // Spaced: grant XP for review session even though task stays active
+          await addXP(currentUser.uid, 10, "task_reviewed", { taskId: task.id })
+        }
+      } catch (err) {
+        console.error("Error completing task:", err)
+      } finally {
+        setCompletingId(null)
+      }
+    },
+    [currentUser?.uid, completingId]
+  )
+
+  /* ------ Statistics ------ */
+  const todayTasks = tasks.filter((t) => isToday(t.nextReviewDate))
+  const upcomingTasks = tasks.filter((t) => !isToday(t.nextReviewDate))
+
+  /* ------------------------------------------------------------------ */
   return (
     <div className="px-4 py-6 sm:px-6 sm:py-8 md:px-8 lg:px-10 lg:py-10">
       {/* Header */}
@@ -191,7 +177,7 @@ export default function VazifalarPage() {
           <div className="min-w-0">
             <p className="text-[10px] sm:text-xs text-slate-400 truncate">Bugun</p>
             <p className="text-base sm:text-lg font-semibold text-slate-800">
-              {todayTasks.length}
+              {loading ? "—" : todayTasks.length}
             </p>
           </div>
         </div>
@@ -202,7 +188,7 @@ export default function VazifalarPage() {
           <div className="min-w-0">
             <p className="text-[10px] sm:text-xs text-slate-400 truncate">Kelgusi</p>
             <p className="text-base sm:text-lg font-semibold text-slate-800">
-              {upcomingTasks.length}
+              {loading ? "—" : upcomingTasks.length}
             </p>
           </div>
         </div>
@@ -213,47 +199,64 @@ export default function VazifalarPage() {
           <div className="min-w-0">
             <p className="text-[10px] sm:text-xs text-slate-400 truncate">Jami</p>
             <p className="text-base sm:text-lg font-semibold text-slate-800">
-              {tasks.length}
+              {loading ? "—" : tasks.length}
             </p>
           </div>
         </div>
       </div>
 
+      {/* Loading skeletons */}
+      {loading && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      )}
+
       {/* Today Section */}
-      {todayTasks.length > 0 && (
+      {!loading && todayTasks.length > 0 && (
         <section className="mb-10">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-teal-700 mb-4">
             Bugungi vazifalar
           </h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
             {todayTasks.map((task) => (
-              <TaskCard key={task.id} task={task} />
+              <TaskCard
+                key={task.id}
+                task={task}
+                isCompleting={completingId === task.id}
+                onComplete={handleCompleteTask}
+              />
             ))}
           </div>
         </section>
       )}
 
       {/* Upcoming Section */}
-      {upcomingTasks.length > 0 && (
+      {!loading && upcomingTasks.length > 0 && (
         <section>
           <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3 sm:mb-4">
             Kelgusi vazifalar
           </h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
             {upcomingTasks.map((task) => (
-              <TaskCard key={task.id} task={task} />
+              <TaskCard
+                key={task.id}
+                task={task}
+                isCompleting={completingId === task.id}
+                onComplete={handleCompleteTask}
+              />
             ))}
           </div>
         </section>
       )}
 
       {/* Empty State */}
-      {tasks.length === 0 && (
+      {!loading && tasks.length === 0 && (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-20 text-center">
           <Book className="mx-auto h-10 w-10 text-slate-300 mb-3" />
-          <p className="text-sm text-slate-400 mb-1">
-            Hali vazifalar mavjud emas
-          </p>
+          <p className="text-sm text-slate-400 mb-1">Hali vazifalar mavjud emas</p>
           <p className="text-xs text-slate-400">
             {"\"Yangi vazifa qo'shish\" tugmasini bosing"}
           </p>
@@ -273,8 +276,16 @@ export default function VazifalarPage() {
 /* ================================================================== */
 /* Task Card Component                                                 */
 /* ================================================================== */
-function TaskCard({ task }: { task: Task }) {
-  const Icon = resolveIcon(task.iconName)
+interface TaskCardProps {
+  task: Task
+  isCompleting: boolean
+  onComplete: (task: Task) => void
+}
+
+function TaskCard({ task, isCompleting, onComplete }: TaskCardProps) {
+  const Icon = resolveIcon(task.icon)
+  const dateLabel = formatReviewDate(task.nextReviewDate)
+  const today = isToday(task.nextReviewDate)
 
   return (
     <article className="group flex flex-col rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm transition-shadow duration-200 hover:shadow-md">
@@ -287,25 +298,25 @@ function TaskCard({ task }: { task: Task }) {
           <h3 className="text-sm font-semibold leading-snug text-slate-800 group-hover:text-teal-700 transition-colors duration-200 line-clamp-2">
             {task.title}
           </h3>
-          <div className="flex items-center gap-2 mt-1.5">
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
             <span
               className={cn(
                 "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                dueBadgeClasses(task.nextDueDate)
+                dueBadgeClasses(dateLabel)
               )}
             >
               <CalendarClock className="h-3 w-3" />
-              {task.nextDueDate}
+              {dateLabel}
             </span>
             <span
               className={cn(
                 "inline-block rounded-full px-2.5 py-0.5 text-xs font-medium",
-                task.type === "interval"
+                task.type === "spaced"
                   ? "bg-teal-50 text-teal-600"
                   : "bg-slate-100 text-slate-500"
               )}
             >
-              {task.type === "interval" ? "Intervalli" : "Bir martalik"}
+              {task.type === "spaced" ? "Intervalli" : "Bir martalik"}
             </span>
           </div>
         </div>
@@ -318,17 +329,47 @@ function TaskCard({ task }: { task: Task }) {
         </p>
       )}
 
-      {/* Interval pills */}
-      {task.type === "interval" && task.intervals.length > 0 && (
+      {/* Interval step indicator (only for spaced tasks) */}
+      {task.type === "spaced" && (
         <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-slate-100">
-          {task.intervals.map((day) => (
+          {[1, 3, 7, 15, 30].map((day, idx) => (
             <span
               key={day}
-              className="rounded-full bg-teal-600 px-2.5 py-0.5 text-[11px] font-medium text-white"
+              className={cn(
+                "rounded-full px-2.5 py-0.5 text-[11px] font-medium",
+                idx < task.intervalStep
+                  ? "bg-teal-600 text-white"
+                  : idx === task.intervalStep
+                    ? "bg-teal-100 text-teal-700 ring-1 ring-teal-400"
+                    : "bg-slate-100 text-slate-400"
+              )}
             >
               {day}k
             </span>
           ))}
+        </div>
+      )}
+
+      {/* Complete button — only show for today's tasks */}
+      {today && (
+        <div className="mt-4 pt-3 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={() => onComplete(task)}
+            disabled={isCompleting}
+            className={cn(
+              "w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-medium transition-all duration-200",
+              "bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-600 hover:text-white hover:border-teal-600",
+              "disabled:cursor-not-allowed disabled:opacity-60"
+            )}
+          >
+            {isCompleting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-3.5 w-3.5" />
+            )}
+            {isCompleting ? "Saqlanmoqda..." : "Bajarildi"}
+          </button>
         </div>
       )}
     </article>

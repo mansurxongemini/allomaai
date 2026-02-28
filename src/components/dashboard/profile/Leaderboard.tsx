@@ -5,9 +5,12 @@ import { cn } from "@/lib/utils"
 import type { LeaderboardEntry } from "@/lib/gamification"
 import { getRank } from "@/lib/gamification"
 
+import { Skeleton } from "@/components/ui/skeleton"
+
 interface LeaderboardProps {
-  entries: LeaderboardEntry[]
-  currentUsername: string
+  entries?: LeaderboardEntry[]
+  currentUsername?: string
+  isLoading?: boolean
 }
 
 function rankMedal(rank: number) {
@@ -17,7 +20,26 @@ function rankMedal(rank: number) {
   return null
 }
 
-export function Leaderboard({ entries, currentUsername }: LeaderboardProps) {
+export function Leaderboard({ entries, currentUsername, isLoading }: LeaderboardProps) {
+  if (isLoading || !entries) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <Skeleton className="w-8 h-8 rounded-lg" />
+          <div className="space-y-1">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full rounded-xl" />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
       <div className="flex items-center gap-2 mb-4">

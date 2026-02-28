@@ -1,12 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Home, ClipboardList, FlaskConical, MessageCircle, ChevronLeft, PenTool, Settings, LogOut } from "lucide-react"
+import { Home, ClipboardList, FlaskConical, MessageCircle, ChevronLeft, PenTool, Settings, LogOut, MessageSquare, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Link, usePathname, useRouter } from "@/i18n/routing"
 import { useAuth } from "@/context/AuthContext"
 import { auth } from "@/lib/firebase"
+import Image from "next/image"
 
 const navItems = [
   { label: "Bosh sahifa", href: "/dashboard", icon: Home },
@@ -14,6 +15,7 @@ const navItems = [
   { label: "LAB", href: "/dashboard/lab", icon: FlaskConical },
   { label: "Couch", href: "/dashboard/couch", icon: MessageCircle },
   { label: "Bloglar", href: "/dashboard/blogs", icon: PenTool },
+  { label: "Murojaatlar", href: "/dashboard/support", icon: MessageSquare },
   { label: "Sozlamalar", href: "/dashboard/settings", icon: Settings },
 ]
 
@@ -81,6 +83,19 @@ export function Sidebar() {
             </Link>
           )
         })}
+
+        {/* New Blog Button */}
+        <Link
+          href="/dashboard/blogs/create"
+          className={cn(
+            "mt-4 flex items-center gap-3 rounded-lg text-sm transition-all duration-300 bg-teal-600 text-white font-medium hover:bg-teal-700 shadow-sm",
+            isCollapsed ? "justify-center px-0 py-2.5" : "justify-start px-3 py-2.5"
+          )}
+          title="Yangi Blog Yozish"
+        >
+          <Plus className="w-5 h-5 shrink-0" />
+          {!isCollapsed && <span>Yangi Blog Yozish</span>}
+        </Link>
       </nav>
 
       {/* Toggle Button */}
@@ -116,9 +131,9 @@ export function Sidebar() {
             "flex items-center gap-3 mb-4",
             isCollapsed && "justify-center"
           )}>
-            <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0 overflow-hidden">
+            <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0 overflow-hidden relative">
               {currentUser.photoURL ? (
-                <img src={currentUser.photoURL} alt={currentUser.displayName || ""} className="w-full h-full object-cover" />
+                <Image src={currentUser.photoURL} alt={currentUser.displayName || ""} fill className="object-cover" sizes="32px" />
               ) : (
                 <span className="text-xs font-medium text-teal-700">
                   {currentUser.displayName?.[0] || currentUser.email?.[0]?.toUpperCase()}

@@ -8,6 +8,7 @@ export interface User {
     level: number;
     completedCases: number;
     role: 'student' | 'lawyer' | 'admin';
+    purchasedCases?: string[]; // Array of caseItem IDs user has purchased
     createdAt: any;
 }
 
@@ -30,6 +31,7 @@ export interface Blog {
     createdAt: any;
 }
 
+/** @deprecated Use CaseSubject / CaseItem / CaseQuestion instead */
 export interface Case {
     id: string;
     subjectId: string;
@@ -38,6 +40,47 @@ export interface Case {
     questionCount: number;
     isPremium: boolean;
     price: number;
+}
+
+// ────────────────────────────────────────────────────────────
+// Cases system (Kazuslar)
+// ────────────────────────────────────────────────────────────
+
+/** Fan bo'limi — Jinoyat huquqi, Fuqarolik huquqi, … */
+export interface CaseSubject {
+    id: string;
+    title: string;            // Fan nomi
+    description?: string;    // Qisqacha tavsif
+    color?: string;           // Tailwind gradient e.g. "from-rose-500 to-rose-600"
+    casesCount: number;
+    createdAt: any;
+}
+
+/** Bitta kazus */
+export interface CaseItem {
+    id: string;
+    subjectId: string;
+    title: string;
+    description: string;     // HTML (Tiptap)
+    order: number;
+    type: 'free' | 'premium';
+    /** Free kazuslar uchun: null = darhol ko'rinadi, Timestamp = shu vaqtdan keyin */
+    freeAfterDate: any | null;
+    /** Premium uchun narx (coins) */
+    price: number;
+    questionsCount: number;
+    createdAt: any;
+    updatedAt: any;
+}
+
+/** Kazus ichidagi bitta savol + yechimi */
+export interface CaseQuestion {
+    id: string;
+    caseId: string;
+    order: number;
+    questionText: string;    // HTML (Tiptap)
+    solutionText: string;    // HTML (Tiptap)
+    createdAt: any;
 }
 
 export interface Question {
@@ -70,6 +113,29 @@ export interface Topic {
     title: string;
     content: string; // HTML from Tiptap
     firstPrinciples: string; // HTML from Tiptap (Justin Sung method)
+    videoUrl?: string;
+    mediaUrls?: string[];
+    quizzes?: Quiz[];
+    mindmapUrl?: string;
+    order: number;
+    createdAt: any;
+    updatedAt: any;
+}
+
+export interface Method {
+    id: string;
+    name: string;
+    topicsCount: number;
+    status: 'Faol' | 'Yashirin';
+    createdAt: any;
+}
+
+export interface MethodTopic {
+    id: string;
+    methodId: string;
+    title: string;
+    content: string; // HTML from Tiptap
+    firstPrinciples: string; // HTML from Tiptap
     videoUrl?: string;
     mediaUrls?: string[];
     quizzes?: Quiz[];

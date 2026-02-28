@@ -7,12 +7,15 @@ import {
     where,
     orderBy,
     setDoc,
+    updateDoc,
     deleteDoc,
-    serverTimestamp
+    increment,
+    serverTimestamp,
+    getCountFromServer
 } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { User, Case, Blog, Topic, Subject } from '@/types';
+import { User, Case, Blog, Topic, Subject, Method, MethodTopic, CaseSubject, CaseItem, CaseQuestion } from '@/types';
 
 /**
  * Fetches a user's profile data from Firestore.
@@ -85,12 +88,45 @@ export async function getSubjects(): Promise<Subject[]> {
         const subjectsRef = collection(db, 'subjects');
         const querySnapshot = await getDocs(subjectsRef);
 
-        return querySnapshot.docs.map(doc => ({
+        const subjects = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         })) as Subject[];
+
+        // Fetch actual counts for each subject to ensure accuracy and fix any existing inconsistencies
+        const subjectsWithCounts = await Promise.all(subjects.map(async (subject) => {
+            try {
+                const topicsRef = collection(db, 'subjects', subject.id, 'topics');
+                const snapshot = await getCountFromServer(topicsRef);
+                return { ...subject, topicsCount: snapshot.data().count };
+            } catch (error) {
+                console.error(`Error fetching count for subject ${subject.id}:`, error);
+                return subject;
+            }
+        }));
+
+        return subjectsWithCounts;
     } catch (error) {
         console.error('Error fetching subjects:', error);
+        throw error;
+    }
+}
+
+/**
+ * Fetches a single subject by ID.
+ * @param subjectId The ID of the subject.
+ * @returns The subject data.
+ */
+export async function getSubject(subjectId: string): Promise<Subject | null> {
+    try {
+        const subjectRef = doc(db, 'subjects', subjectId);
+        const docSnap = await getDoc(subjectRef);
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() } as Subject;
+        }
+        return null;
+    } catch (error) {
+        console.error('Error fetching subject detail:', error);
         throw error;
     }
 }
@@ -136,6 +172,12 @@ export async function addTopic(subjectId: string, data: Partial<Topic>): Promise
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         });
+
+        // Increment topicsCount in the parent subject
+        const subjectRef = doc(db, 'subjects', subjectId);
+        await updateDoc(subjectRef, {
+            topicsCount: increment(1)
+        });
     } catch (error) {
         console.error('Error adding topic:', error);
         throw error;
@@ -170,6 +212,12 @@ export async function deleteTopic(subjectId: string, topicId: string): Promise<v
     try {
         const topicRef = doc(db, 'subjects', subjectId, 'topics', topicId);
         await deleteDoc(topicRef);
+
+        // Decrement topicsCount in the parent subject
+        const subjectRef = doc(db, 'subjects', subjectId);
+        await updateDoc(subjectRef, {
+            topicsCount: increment(-1)
+        });
     } catch (error) {
         console.error('Error deleting topic:', error);
         throw error;
@@ -231,4 +279,308 @@ export async function uploadMindmap(file: File): Promise<string> {
         console.error('Error uploading mindmap:', error);
         throw error;
     }
+}
+
+// ==========================================
+// Methods CRUD
+// ==========================================
+
+/**
+ * Fetches all methods from Firestore.
+ */
+export async function getMethods(): Promise<Method[]> {
+    try {
+        const methodsRef = collection(db, 'methods');
+        const querySnapshot = await getDocs(methodsRef);
+
+        const methods = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        })) as Method[];
+
+        const methodsWithCounts = await Promise.all(methods.map(async (method) => {
+            try {
+                const topicsRef = collection(db, 'methods', method.id, 'topics');
+                const snapshot = await getCountFromServer(topicsRef);
+                return { ...method, topicsCount: snapshot.data().count };
+            } catch (error) {
+                console.error(`Error fetching count for method ${method.id}:`, error);
+                return method;
+            }
+        }));
+
+        return methodsWithCounts;
+    } catch (error) {
+        console.error('Error fetching methods:', error);
+        throw error;
+    }
+}
+
+/**
+ * Fetches a single method by ID.
+ */
+export async function getMethod(methodId: string): Promise<Method | null> {
+    try {
+        const methodRef = doc(db, 'methods', methodId);
+        const docSnap = await getDoc(methodRef);
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() } as Method;
+        }
+        return null;
+    } catch (error) {
+        console.error('Error fetching method detail:', error);
+        throw error;
+    }
+}
+
+/**
+ * Adds a new method to Firestore.
+ */
+export async function addMethod(data: Partial<Method>): Promise<void> {
+    try {
+        const methodsRef = collection(db, 'methods');
+        const methodId = doc(methodsRef).id;
+        const methodRef = doc(db, 'methods', methodId);
+
+        await setDoc(methodRef, {
+            ...data,
+            id: methodId,
+            createdAt: serverTimestamp(),
+            topicsCount: 0,
+            status: data.status || 'Faol'
+        });
+    } catch (error) {
+        console.error('Error adding method:', error);
+        throw error;
+    }
+}
+
+/**
+ * Deletes a method from Firestore.
+ */
+export async function deleteMethod(methodId: string): Promise<void> {
+    try {
+        const methodRef = doc(db, 'methods', methodId);
+        await deleteDoc(methodRef);
+    } catch (error) {
+        console.error('Error deleting method:', error);
+        throw error;
+    }
+}
+
+// ==========================================
+// Method Topics CRUD
+// ==========================================
+
+/**
+ * Fetches all topics for a given method, ordered by 'order'.
+ */
+export async function getMethodTopics(methodId: string): Promise<MethodTopic[]> {
+    try {
+        const topicsRef = collection(db, 'methods', methodId, 'topics');
+        const q = query(topicsRef, orderBy('order', 'asc'));
+        const querySnapshot = await getDocs(q);
+
+        return querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        })) as MethodTopic[];
+    } catch (error) {
+        console.error('Error fetching method topics:', error);
+        throw error;
+    }
+}
+
+/**
+ * Fetches a single method topic by ID.
+ */
+export async function getMethodTopicDetail(methodId: string, topicId: string): Promise<MethodTopic | null> {
+    try {
+        const topicRef = doc(db, 'methods', methodId, 'topics', topicId);
+        const docSnap = await getDoc(topicRef);
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() } as MethodTopic;
+        }
+        return null;
+    } catch (error) {
+        console.error('Error fetching method topic detail:', error);
+        throw error;
+    }
+}
+
+/**
+ * Adds a new topic to a method.
+ */
+export async function addMethodTopic(methodId: string, data: Partial<MethodTopic>): Promise<void> {
+    try {
+        const topicsRef = collection(db, 'methods', methodId, 'topics');
+        const topicId = doc(topicsRef).id;
+        const topicRef = doc(db, 'methods', methodId, 'topics', topicId);
+
+        await setDoc(topicRef, {
+            ...data,
+            id: topicId,
+            methodId,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        });
+
+        const methodRef = doc(db, 'methods', methodId);
+        await updateDoc(methodRef, {
+            topicsCount: increment(1)
+        });
+    } catch (error) {
+        console.error('Error adding method topic:', error);
+        throw error;
+    }
+}
+
+/**
+ * Updates an existing method topic.
+ */
+export async function updateMethodTopic(methodId: string, topicId: string, data: Partial<MethodTopic>): Promise<void> {
+    try {
+        const topicRef = doc(db, 'methods', methodId, 'topics', topicId);
+        await setDoc(topicRef, {
+            ...data,
+            updatedAt: serverTimestamp(),
+        }, { merge: true });
+    } catch (error) {
+        console.error('Error updating method topic:', error);
+        throw error;
+    }
+}
+
+/**
+ * Deletes a topic from a method.
+ */
+export async function deleteMethodTopic(methodId: string, topicId: string): Promise<void> {
+    try {
+        const topicRef = doc(db, 'methods', methodId, 'topics', topicId);
+        await deleteDoc(topicRef);
+
+        const methodRef = doc(db, 'methods', methodId);
+        await updateDoc(methodRef, {
+            topicsCount: increment(-1)
+        });
+    } catch (error) {
+        console.error('Error deleting method topic:', error);
+        throw error;
+    }
+}
+
+// ==========================================
+// Cases System CRUD (Kazuslar tizimi)
+// ==========================================
+
+/** Fetches all case subjects ordered by createdAt asc. */
+export async function getCaseSubjects(): Promise<CaseSubject[]> {
+    try {
+        const ref = collection(db, 'caseSubjects');
+        const q = query(ref, orderBy('createdAt', 'asc'));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as CaseSubject[];
+    } catch (error) { console.error('Error fetching caseSubjects:', error); throw error; }
+}
+
+/** Fetches a single case subject by ID. */
+export async function getCaseSubject(subjectId: string): Promise<CaseSubject | null> {
+    try {
+        const snap = await getDoc(doc(db, 'caseSubjects', subjectId));
+        return snap.exists() ? { id: snap.id, ...snap.data() } as CaseSubject : null;
+    } catch (error) { console.error('Error fetching caseSubject:', error); throw error; }
+}
+
+/** Adds a new case subject. Returns the new ID. */
+export async function addCaseSubject(data: Pick<CaseSubject, 'title' | 'description' | 'color'>): Promise<string> {
+    try {
+        const newRef = doc(collection(db, 'caseSubjects'));
+        await setDoc(newRef, { ...data, id: newRef.id, casesCount: 0, createdAt: serverTimestamp() });
+        return newRef.id;
+    } catch (error) { console.error('Error adding caseSubject:', error); throw error; }
+}
+
+/** Deletes a case subject. */
+export async function deleteCaseSubject(subjectId: string): Promise<void> {
+    try { await deleteDoc(doc(db, 'caseSubjects', subjectId)); }
+    catch (error) { console.error('Error deleting caseSubject:', error); throw error; }
+}
+
+/** Fetches all cases for a subject, ordered by 'order'. */
+export async function getCases(subjectId: string): Promise<CaseItem[]> {
+    try {
+        const q = query(collection(db, 'cases'), where('subjectId', '==', subjectId), orderBy('order', 'asc'));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as CaseItem[];
+    } catch (error) { console.error('Error fetching cases:', error); throw error; }
+}
+
+/** Fetches a single case by ID. */
+export async function getCaseDetail(caseId: string): Promise<CaseItem | null> {
+    try {
+        const snap = await getDoc(doc(db, 'cases', caseId));
+        return snap.exists() ? { id: snap.id, ...snap.data() } as CaseItem : null;
+    } catch (error) { console.error('Error fetching case detail:', error); throw error; }
+}
+
+/** Creates a new case. Returns the new ID. */
+export async function addCase(subjectId: string, data: Partial<CaseItem>): Promise<string> {
+    try {
+        const newRef = doc(collection(db, 'cases'));
+        await setDoc(newRef, {
+            ...data, id: newRef.id, subjectId, questionsCount: 0,
+            createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+        });
+        await updateDoc(doc(db, 'caseSubjects', subjectId), { casesCount: increment(1) });
+        return newRef.id;
+    } catch (error) { console.error('Error adding case:', error); throw error; }
+}
+
+/** Updates an existing case (merge). */
+export async function updateCaseItem(caseId: string, data: Partial<CaseItem>): Promise<void> {
+    try {
+        await setDoc(doc(db, 'cases', caseId), { ...data, updatedAt: serverTimestamp() }, { merge: true });
+    } catch (error) { console.error('Error updating case:', error); throw error; }
+}
+
+/** Deletes a case and decrements parent subject casesCount. */
+export async function deleteCase(subjectId: string, caseId: string): Promise<void> {
+    try {
+        await deleteDoc(doc(db, 'cases', caseId));
+        await updateDoc(doc(db, 'caseSubjects', subjectId), { casesCount: increment(-1) });
+    } catch (error) { console.error('Error deleting case:', error); throw error; }
+}
+
+/** Fetches all questions for a case, ordered by 'order'. */
+export async function getQuestions(caseId: string): Promise<CaseQuestion[]> {
+    try {
+        const q = query(collection(db, 'cases', caseId, 'questions'), orderBy('order', 'asc'));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as CaseQuestion[];
+    } catch (error) { console.error('Error fetching questions:', error); throw error; }
+}
+
+/** Adds a question to a case, increments questionsCount. Returns new ID. */
+export async function addQuestion(caseId: string, data: Partial<CaseQuestion>): Promise<string> {
+    try {
+        const newRef = doc(collection(db, 'cases', caseId, 'questions'));
+        await setDoc(newRef, { ...data, id: newRef.id, caseId, createdAt: serverTimestamp() });
+        await updateDoc(doc(db, 'cases', caseId), { questionsCount: increment(1) });
+        return newRef.id;
+    } catch (error) { console.error('Error adding question:', error); throw error; }
+}
+
+/** Updates a question (merge). */
+export async function updateQuestion(caseId: string, questionId: string, data: Partial<CaseQuestion>): Promise<void> {
+    try {
+        await setDoc(doc(db, 'cases', caseId, 'questions', questionId), data, { merge: true });
+    } catch (error) { console.error('Error updating question:', error); throw error; }
+}
+
+/** Deletes a question, decrements questionsCount. */
+export async function deleteQuestion(caseId: string, questionId: string): Promise<void> {
+    try {
+        await deleteDoc(doc(db, 'cases', caseId, 'questions', questionId));
+        await updateDoc(doc(db, 'cases', caseId), { questionsCount: increment(-1) });
+    } catch (error) { console.error('Error deleting question:', error); throw error; }
 }

@@ -1,29 +1,46 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link, usePathname } from "@/i18n/routing"
 import { FlaskConical, ChevronDown, BookOpen, Lightbulb, Scale } from "lucide-react"
 import { cn } from "@/lib/utils"
-
-const subjects = [
-  { id: "jinoyat-huquqi", name: "Jinoyat huquqi" },
-  { id: "fuqarolik-huquqi", name: "Fuqarolik huquqi" },
-  { id: "konstitutsiya-huquqi", name: "Konstitutsiya huquqi" },
-  { id: "mehnat-huquqi", name: "Mehnat huquqi" },
-  { id: "administrativ-huquq", name: "Administrativ huquq" },
-]
-
-const methods = [
-  { id: "encoding", name: "Kodlash (Encoding)" },
-  { id: "chunking", name: "Bo'laklash (Chunking)" },
-  { id: "spaced-repetition", name: "Takroriy esga tushirish" },
-  { id: "active-recall", name: "Faol eslash" },
-]
+import { getSubjects, getMethods } from "@/services/firestore"
+import { Subject, Method } from "@/types"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export function LabSidebar() {
   const pathname = usePathname()
   const [subjectsOpen, setSubjectsOpen] = useState(true)
   const [methodsOpen, setMethodsOpen] = useState(false)
+  const [subjects, setSubjects] = useState<Subject[]>([])
+  const [methods, setMethods] = useState<Method[]>([])
+  const [isLoadingSubjects, setIsLoadingSubjects] = useState(true)
+  const [isLoadingMethods, setIsLoadingMethods] = useState(true)
+
+  useEffect(() => {
+    async function fetchSubjects() {
+      try {
+        const data = await getSubjects()
+        setSubjects(data.filter(s => s.status === 'Faol'))
+      } catch (error) {
+        console.error("Failed to load subjects:", error)
+      } finally {
+        setIsLoadingSubjects(false)
+      }
+    }
+    async function fetchMethods() {
+      try {
+        const data = await getMethods()
+        setMethods(data.filter(m => m.status === 'Faol'))
+      } catch (error) {
+        console.error("Failed to load methods:", error)
+      } finally {
+        setIsLoadingMethods(false)
+      }
+    }
+    fetchSubjects()
+    fetchMethods()
+  }, [])
 
   return (
     <div className="flex flex-col h-full bg-white border-r border-slate-200">
@@ -57,26 +74,36 @@ export function LabSidebar() {
           </button>
           {subjectsOpen && (
             <div className="mt-1 space-y-0.5">
-              {subjects.map((subject) => (
-                <Link
-                  key={subject.id}
-                  href={`/dashboard/lab/subjects/${subject.id}`}
-                  className={cn(
-                    "block px-3 py-2 ml-6 text-sm rounded-lg transition-colors",
-                    pathname === `/dashboard/lab/subjects/${subject.id}` ||
-                      pathname.startsWith(`/dashboard/lab/subjects/${subject.id}/`)
-                      ? "bg-teal-50 text-teal-700 font-medium"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                  )}
-                >
-                  {subject.name}
-                </Link>
-              ))}
+              {isLoadingSubjects ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="pl-6 pr-3 py-2">
+                    <Skeleton className="h-5 w-full rounded-md bg-slate-100" />
+                  </div>
+                ))
+              ) : subjects.length === 0 ? (
+                <div className="pl-6 pr-3 py-2 text-xs text-slate-400">Fanlar mavjud emas</div>
+              ) : (
+                subjects.map((subject) => (
+                  <Link
+                    key={subject.id}
+                    href={`/dashboard/lab/subjects/${subject.id}`}
+                    className={cn(
+                      "block px-3 py-2 ml-6 text-sm rounded-lg transition-colors",
+                      pathname === `/dashboard/lab/subjects/${subject.id}` ||
+                        pathname.startsWith(`/dashboard/lab/subjects/${subject.id}/`)
+                        ? "bg-teal-50 text-teal-700 font-medium"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    )}
+                  >
+                    {subject.name}
+                  </Link>
+                ))
+              )}
             </div>
           )}
         </div>
 
-        {/* Metodlar Section */}
+        {/* Metodlar Section — Dynamic */}
         <div className="mt-2">
           <button
             type="button"
@@ -91,20 +118,31 @@ export function LabSidebar() {
           </button>
           {methodsOpen && (
             <div className="mt-1 space-y-0.5">
-              {methods.map((method) => (
-                <Link
-                  key={method.id}
-                  href={`/dashboard/lab/methods/${method.id}`}
-                  className={cn(
-                    "block px-3 py-2 ml-6 text-sm rounded-lg transition-colors",
-                    pathname === `/dashboard/lab/methods/${method.id}`
-                      ? "bg-amber-50 text-amber-700 font-medium"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                  )}
-                >
-                  {method.name}
-                </Link>
-              ))}
+              {isLoadingMethods ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="pl-6 pr-3 py-2">
+                    <Skeleton className="h-5 w-full rounded-md bg-slate-100" />
+                  </div>
+                ))
+              ) : methods.length === 0 ? (
+                <div className="pl-6 pr-3 py-2 text-xs text-slate-400">Metodlar mavjud emas</div>
+              ) : (
+                methods.map((method) => (
+                  <Link
+                    key={method.id}
+                    href={`/dashboard/lab/methods/${method.id}`}
+                    className={cn(
+                      "block px-3 py-2 ml-6 text-sm rounded-lg transition-colors",
+                      pathname === `/dashboard/lab/methods/${method.id}` ||
+                        pathname.startsWith(`/dashboard/lab/methods/${method.id}/`)
+                        ? "bg-amber-50 text-amber-700 font-medium"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    )}
+                  >
+                    {method.name}
+                  </Link>
+                ))
+              )}
             </div>
           )}
         </div>

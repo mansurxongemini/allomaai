@@ -33,9 +33,10 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import AdvancedEditor from "@/components/ui/editor/AdvancedEditor"
-import { getTopicDetail, updateTopic, uploadMindmap } from "@/services/firestore"
+import { getTopicDetail, updateTopic, uploadMindmap, addTopic, getTopics } from "@/services/firestore"
 import { Topic, Quiz } from "@/types"
 import { cn } from "@/lib/utils"
+import NextImage from "next/image"
 
 export default function TopicDetailPage() {
     const { subjectId, topicId } = useParams()
@@ -61,6 +62,19 @@ export default function TopicDetailPage() {
     }, [subjectId, topicId])
 
     const loadTopicDetail = async () => {
+        if (topicId === 'new') {
+            setIsLoading(false)
+            // Optionally fetch topics to get the next order
+            try {
+                const existingTopics = await getTopics(subjectId as string)
+                setTopic({ order: existingTopics.length + 1 } as Topic)
+            } catch (error) {
+                console.error("Error fetching topics for order:", error)
+                setTopic({ order: 1 } as Topic)
+            }
+            return
+        }
+
         try {
             const data = await getTopicDetail(subjectId as string, topicId as string)
             if (data) {
@@ -119,16 +133,36 @@ export default function TopicDetailPage() {
         if (!title) return
         setIsSaving(true)
         try {
-            await updateTopic(subjectId as string, topicId as string, {
+            // Firestore doesn't accept 'undefined'. We must remove undefined fields from quizzes.
+            const sanitizedQuizzes = quizzes.map(quiz => {
+                const cleaned: any = { ...quiz }
+                Object.keys(cleaned).forEach(key => {
+                    if (cleaned[key] === undefined) {
+                        delete cleaned[key]
+                    }
+                })
+                return cleaned
+            })
+
+            const topicData = {
                 title,
                 content,
                 firstPrinciples,
                 videoUrl,
                 mindmapUrl,
-                quizzes,
+                quizzes: sanitizedQuizzes,
                 updatedAt: new Date()
-            })
-            router.refresh()
+            }
+
+            if (topicId === 'new') {
+                await addTopic(subjectId as string, {
+                    ...topicData,
+                    order: topic?.order || 1
+                })
+            } else {
+                await updateTopic(subjectId as string, topicId as string, topicData)
+            }
+            router.push(`/admin/subjects/${subjectId}`)
         } catch (error) {
             console.error("Save error:", error)
         } finally {
@@ -170,7 +204,7 @@ export default function TopicDetailPage() {
                 </div>
             </div>
 
-            <div className="max-w-4xl mx-auto space-y-8">
+            <div className="max-w-5xl mx-auto space-y-8">
                 {/* Basic Info Card */}
                 <Card className="border-slate-200 shadow-sm overflow-hidden rounded-2xl">
                     <CardHeader className="bg-slate-50/50 border-b border-slate-100">
@@ -385,7 +419,9 @@ export default function TopicDetailPage() {
                         {mindmapUrl ? (
                             <div className="space-y-3">
                                 <div className="aspect-auto min-h-[300px] bg-slate-100 rounded-xl flex items-center justify-center border border-slate-200 overflow-hidden relative group">
-                                    <img src={mindmapUrl} alt="Mindmap" className="w-full h-auto object-contain" />
+                                    <div className="relative w-full aspect-[16/9]">
+                                        <NextImage src={mindmapUrl} alt="Mindmap" fill className="object-contain" sizes="100vw" />
+                                    </div>
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <Button variant="destructive" size="sm" onClick={() => setMindmapUrl("")} className="rounded-lg h-8">
                                             <Trash2 className="w-4 h-4 mr-2" /> O'chirish

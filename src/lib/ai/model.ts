@@ -1,5 +1,3 @@
-import { openai } from '@ai-sdk/openai';
+import { google } from '@ai-sdk/google';
 
-export const AI_MODEL = openai('gpt-4o-mini', {
-  structuredOutputs: true,
-});
+export const AI_MODEL = google('gemini-3-flash-preview');
