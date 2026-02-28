@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Trash2, BookOpen, Loader2, Lightbulb } from "lucide-react"
+import { Plus, Trash2, Loader2, Lightbulb } from "lucide-react"
 import { useRouter } from "@/i18n/routing"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"

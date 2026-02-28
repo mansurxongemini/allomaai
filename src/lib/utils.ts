@@ -1,4 +1,4 @@
-import type { UIMessage } from 'ai';
+import type { Message } from 'ai';
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -17,7 +17,7 @@ export const getCurrentYear = (): number => {
 /**
  * AI chat mantiqi uchun foydalanuvchining oxirgi xabarini olish.
  */
-export function getMostRecentUserMessage(messages: Array<UIMessage>) {
+export function getMostRecentUserMessage(messages: Array<Message>) {
   const userMessages = messages.filter((message) => message.role === 'user');
   return userMessages.at(-1);
 }

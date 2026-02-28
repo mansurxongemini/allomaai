@@ -17,13 +17,13 @@ export async function POST(req: Request) {
       });
     }
 
-    const result = streamText({
+    const result = await streamText({
       model: AI_MODEL as any,
       system: PROMPT,
       messages,
     });
 
-    return result.toDataStreamResponse();
+    return result.toTextStreamResponse();
   } catch (error) {
     console.error('[/api/chat] Error:', error);
     const message = error instanceof Error ? error.message : 'Internal server error';

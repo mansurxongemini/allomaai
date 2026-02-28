@@ -187,8 +187,7 @@ export default function StudentSupportDashboard() {
 
     const selectedTicket = tickets.find(t => t.id === selectedTicketId)
 
-    const formatTime = formatFirestoreTime
-    const formatDate = formatFirestoreDate
+    // The format utilities are used directly in JSX below
 
     if (!currentUser) {
         return (
@@ -310,7 +309,7 @@ export default function StudentSupportDashboard() {
                                         <div className="flex justify-between items-center">
                                             <span className="text-[11px] text-slate-400 flex items-center gap-1">
                                                 <Clock className="w-3 h-3" />
-                                                {formatDate(ticket.createdAt)}
+                                                {formatFirestoreDate(ticket.createdAt)}
                                             </span>
                                             <Badge variant="secondary" className={cn(
                                                 "text-[10px] h-5 px-2",
@@ -349,7 +348,7 @@ export default function StudentSupportDashboard() {
                                 <div className="flex flex-col overflow-hidden">
                                     <span className="text-sm font-bold text-slate-800 truncate">{selectedTicket.subject}</span>
                                     <span className="text-[11px] text-slate-500 truncate">
-                                        Holat: {selectedTicket.status} • Yuribori: {formatDate(selectedTicket.createdAt)}
+                                        Holat: {selectedTicket.status} • Yuribori: {formatFirestoreDate(selectedTicket.createdAt)}
                                     </span>
                                 </div>
                             </div>
@@ -386,7 +385,7 @@ export default function StudentSupportDashboard() {
                                                 "text-[10px] text-slate-400 mt-1 font-medium",
                                                 message.sender === "user" ? "mr-1" : "ml-8"
                                             )}>
-                                                {formatTime(message.createdAt)}
+                                                {formatFirestoreTime(message.createdAt)}
                                             </span>
                                         </div>
                                     ))

@@ -2,19 +2,19 @@ import { z } from 'zod';
 
 export const authSchema = z.object({
   firstName: z
-    .string({ required_error: 'First name is required' })
+    .string({ message: 'First name is required' })
     .min(1, 'First name is required')
     .trim(),
   lastName: z
-    .string({ required_error: 'Last name is required' })
+    .string({ message: 'Last name is required' })
     .min(1, 'Last name is required')
     .trim(),
   email: z
-    .string({ required_error: 'Email is required' })
+    .string({ message: 'Email is required' })
     .email('Invalid email')
     .trim(),
   password: z
-    .string({ required_error: 'Password is required' })
+    .string({ message: 'Password is required' })
     .min(8, 'Password must be at least 8 characters long')
     .trim(),
 });
@@ -31,11 +31,11 @@ export const authValidation = {
       newPassword: authSchema.shape.password,
       confirmNewPassword: authSchema.shape.password,
     })
-    .refine((data) => data.newPassword !== data.oldPassword, {
+    .refine((data: any) => data.newPassword !== data.oldPassword, {
       path: ['newPassword'],
       message: 'New password cannot be the same as the old password',
     })
-    .refine((data) => data.newPassword === data.confirmNewPassword, {
+    .refine((data: any) => data.newPassword === data.confirmNewPassword, {
       path: ['confirmNewPassword'],
       message: 'Passwords do not match',
     }),
@@ -44,7 +44,7 @@ export const authValidation = {
       oldPassword: authSchema.shape.password,
       newPassword: authSchema.shape.password,
     })
-    .refine((data) => data.newPassword !== data.oldPassword, {
+    .refine((data: any) => data.newPassword !== data.oldPassword, {
       path: ['newPassword'],
       message: 'New password cannot be the same as the old password',
     }),
@@ -54,7 +54,7 @@ export const authValidation = {
       newPassword: authSchema.shape.password,
       confirmNewPassword: authSchema.shape.password,
     })
-    .refine((data) => data.newPassword === data.confirmNewPassword, {
+    .refine((data: any) => data.newPassword === data.confirmNewPassword, {
       path: ['confirmNewPassword'],
       message: 'Passwords do not match',
     }),

@@ -184,8 +184,7 @@ export default function SupportPage() {
         }
     }
 
-    const formatTime = formatFirestoreTime
-    const formatDate = formatFirestoreDate
+    // The format utilities are used directly in JSX below
 
     return (
         <div className="h-[calc(100vh-100px)] overflow-hidden flex flex-col gap-4 p-2 md:p-6 lg:gap-6 lg:p-0">
@@ -245,7 +244,7 @@ export default function SupportPage() {
                                     </div>
                                     <p className="text-xs font-medium text-slate-700 truncate mb-1">Mavzu: {ticket.subject}</p>
                                     <div className="flex justify-between items-center mt-2">
-                                        <span className="text-[10px] text-slate-400 font-medium">{formatDate(ticket.createdAt)}</span>
+                                        <span className="text-[10px] text-slate-400 font-medium">{formatFirestoreDate(ticket.createdAt)}</span>
                                     </div>
                                 </div>
                             ))
@@ -317,7 +316,7 @@ export default function SupportPage() {
                                                     ? "bg-teal-600 text-white rounded-tr-none"
                                                     : "bg-white border border-slate-200 text-slate-800 rounded-tl-none"
                                             )} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(message.text) }} />
-                                            <span className="text-[10px] text-slate-400 mt-1 font-medium">{formatTime(message.createdAt)}</span>
+                                            <span className="text-[10px] text-slate-400 mt-1 font-medium">{formatFirestoreTime(message.createdAt)}</span>
                                         </div>
                                     ))
                                 )}

@@ -1,6 +1,7 @@
 'use client';
 
 import type { UseChatHelpers } from '@ai-sdk/react';
+import type { Message } from 'ai';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { useStickToBottom } from 'use-stick-to-bottom';
@@ -8,7 +9,9 @@ import AiResponse from './text/ai-response';
 import UserMessage from './text/user-message';
 
 type PropsType = {
-  useChat: UseChatHelpers & {
+  useChat: Omit<UseChatHelpers, 'setMessages'> & {
+    setMessages: (messages: Message[] | ((messages: Message[]) => Message[])) => void;
+  } & {
     addToolResult: ({
       toolCallId,
       result,
@@ -21,7 +24,8 @@ type PropsType = {
 };
 
 export function RenderMessage({ useChat, isThinking }: PropsType) {
-  const { messages, setMessages, reload, error } = useChat;
+  const { messages, setMessages, error } = useChat;
+  const reload = (useChat as any).reload;
   const { contentRef, scrollRef } = useStickToBottom();
 
   useEffect(() => {
@@ -41,51 +45,37 @@ export function RenderMessage({ useChat, isThinking }: PropsType) {
         className="text-gray-800 dark:text-white/90 space-y-6 max-w-none prose dark:prose-invert"
         ref={contentRef}
       >
-        {messages.map((message, messageIdx) => {
+        {messages.map((message: Message, messageIdx: number) => {
           return (
             <div key={message.id}>
-              {message.parts.map((part, i) => {
-                if (part.type === 'text') {
-                  if (message.role === 'user') {
-                    return (
-                      <UserMessage
-                        key={`${message.id}-${i}`}
-                        message={part.text}
-                        showActions={
-                          // showActions is true only for the last user message
-                          messages.length - 1 === messageIdx ||
-                          // if ai responded it should be second to last
-                          messages.length - 2 === messageIdx
-                        }
-                        onEdit={async (newMessage) => {
-                          setMessages((prev) => {
-                            return prev.map((prevMsg) => {
-                              if (prevMsg.id !== message.id) return prevMsg;
-
-                              return {
-                                ...prevMsg,
-                                parts: prevMsg.parts?.map((part) => ({
-                                  ...part,
-                                  text: newMessage,
-                                })),
-                              };
-                            });
-                          });
-
-                          reload();
-                        }}
-                      />
-                    );
+              {message.role === 'user' ? (
+                <UserMessage
+                  key={message.id}
+                  message={message.content}
+                  showActions={
+                    // showActions is true only for the last user message
+                    messages.length - 1 === messageIdx ||
+                    // if ai responded it should be second to last
+                    messages.length - 2 === messageIdx
                   }
+                  onEdit={async (newMessage) => {
+                    setMessages((prev: Message[]) => {
+                      return prev.map((prevMsg: Message) => {
+                        if (prevMsg.id !== message.id) return prevMsg;
 
-                  return (
-                    <AiResponse
-                      key={`${message.id}-${i}`}
-                      response={part.text}
-                    />
-                  );
-                }
-              })}
+                        return {
+                          ...prevMsg,
+                          content: newMessage,
+                        };
+                      });
+                    });
+
+                    reload();
+                  }}
+                />
+              ) : (
+                <AiResponse key={message.id} response={message.content} />
+              )}
             </div>
           );
         })}

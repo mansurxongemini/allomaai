@@ -85,11 +85,10 @@ export default function BlogsPage() {
     useEffect(() => {
         const q = query(collection(db, "blogs"), orderBy("createdAt", "desc"))
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const blogsData = snapshot.docs.map(doc => ({
+            setBlogs(snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
-            })) as Blog[]
-            setBlogs(blogsData)
+            })) as Blog[])
             setLoading(false)
         })
         return () => unsubscribe()

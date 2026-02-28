@@ -11,13 +11,13 @@ import {
     serverTimestamp,
     deleteDoc
 } from "firebase/firestore"
-import { UIMessage } from "ai"
+import { Message } from "ai"
 
 export interface ChatSession {
     id: string
     userId: string
     title: string
-    messages: UIMessage[]
+    messages: Message[]
     createdAt: any
     updatedAt: any
 }
@@ -63,7 +63,7 @@ export async function createChatSession(userId: string, title: string = "Yangi s
 /**
  * Updates the messages array in a specific chat session.
  */
-export async function updateChatMessages(chatId: string, messages: UIMessage[], title?: string) {
+export async function updateChatMessages(chatId: string, messages: Message[], title?: string) {
     if (!chatId) return
 
     // Firestore rejects `undefined` values. UIMessage objects from the AI SDK

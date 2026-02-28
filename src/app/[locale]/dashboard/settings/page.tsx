@@ -41,7 +41,6 @@ export default function SettingsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [fontSize, setFontSize] = useState("medium")
   const [theme, setTheme] = useState("light")
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
 
   // Security State
   const [securityData, setSecurityData] = useState({
