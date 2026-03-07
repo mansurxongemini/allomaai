@@ -7,9 +7,11 @@ import { cn } from "@/lib/utils"
 import { getSubjects, getMethods } from "@/services/firestore"
 import { Subject, Method } from "@/types"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useAuth } from "@/context/AuthContext"
 
 export function LabSidebar() {
   const pathname = usePathname()
+  const { currentUser, loading } = useAuth()
   const [subjectsOpen, setSubjectsOpen] = useState(true)
   const [methodsOpen, setMethodsOpen] = useState(false)
   const [subjects, setSubjects] = useState<Subject[]>([])
@@ -18,6 +20,8 @@ export function LabSidebar() {
   const [isLoadingMethods, setIsLoadingMethods] = useState(true)
 
   useEffect(() => {
+    if (loading || !currentUser) return;
+
     async function fetchSubjects() {
       try {
         const data = await getSubjects()
@@ -40,7 +44,7 @@ export function LabSidebar() {
     }
     fetchSubjects()
     fetchMethods()
-  }, [])
+  }, [currentUser, loading])
 
   return (
     <div className="flex flex-col h-full bg-white border-r border-slate-200">

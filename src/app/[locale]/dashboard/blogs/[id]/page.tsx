@@ -1,6 +1,5 @@
 "use client"
 
-import DOMPurify from "dompurify"
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Image from "next/image"
@@ -11,6 +10,7 @@ import { ArrowLeft, Clock, Calendar, User, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { SafeHTML } from "@/components/SafeHTML"
 
 interface Blog {
     id: string
@@ -169,10 +169,6 @@ export default function BlogDetailPage() {
                     </div>
                 </div>
 
-                import DOMPurify from "dompurify"
-
-                // ... (in the component) ...
-
                 {/* Content */}
                 <div className="prose prose-lg md:prose-xl dark:prose-invert max-w-none mx-auto
           prose-headings:text-slate-900 prose-headings:font-black
@@ -183,13 +179,13 @@ export default function BlogDetailPage() {
           prose-blockquote:border-l-teal-500 prose-blockquote:bg-teal-50/50 prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-2xl prose-blockquote:italic
           prose-ul:list-disc prose-ul:marker:text-teal-500
           prose-ol:list-decimal prose-ol:marker:text-teal-500 prose-ol:font-bold">
-                    <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(blog.content) }} />
+                    <SafeHTML html={blog.content} />
                 </div>
 
                 {/* Tags */}
                 {blog.tags && blog.tags.length > 0 && (
                     <div className="mt-16 flex flex-wrap gap-2">
-                        {blog.tags.map((tag) => (
+                        {blog.tags.map((tag: string) => (
                             <Badge key={tag} variant="secondary" className="bg-slate-100 text-slate-600 hover:bg-slate-200 border-0 px-4 py-1 rounded-lg text-xs font-medium">
                                 #{tag}
                             </Badge>

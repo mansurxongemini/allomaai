@@ -33,7 +33,7 @@ interface BadgesGridProps {
 export function BadgesGrid({ badges, isLoading }: BadgesGridProps) {
   if (isLoading || !badges) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+      <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
         <div className="flex items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-2">
             <Skeleton className="w-8 h-8 rounded-lg" />
@@ -56,7 +56,7 @@ export function BadgesGrid({ badges, isLoading }: BadgesGridProps) {
   const locked = badges.filter((b) => !b.unlockedAt)
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+    <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
       <div className="flex items-center justify-between gap-2 mb-4">
         <div className="flex items-center gap-2">
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 shrink-0">
@@ -106,10 +106,10 @@ function BadgeCard({ badge }: { badge: Badge }) {
   return (
     <div
       className={cn(
-        "flex flex-col items-center gap-2 rounded-xl border p-3 sm:p-4 transition-all duration-200",
-        isLocked
-          ? "border-slate-200 bg-slate-50/50 opacity-60"
-          : cn("bg-white shadow-sm hover:shadow-md", tier.border)
+        "flex flex-col items-center gap-2 rounded-xl border p-3 sm:p-4 transition-all duration-300",
+        isLocked && badge.progress < 100
+          ? "border-slate-100 bg-slate-50/50 grayscale opacity-70"
+          : cn("bg-white shadow-sm hover:shadow-md border-gray-100", tier.border)
       )}
     >
       <div
@@ -130,12 +130,12 @@ function BadgeCard({ badge }: { badge: Badge }) {
         <p
           className={cn(
             "text-xs sm:text-sm font-semibold leading-tight truncate",
-            isLocked ? "text-slate-400" : "text-slate-800"
+            isLocked && badge.progress < 100 ? "text-gray-500" : "text-slate-800"
           )}
         >
           {badge.title}
         </p>
-        <p className="text-[10px] text-slate-400 mt-0.5 truncate">
+        <p className="text-[10px] text-slate-400 mt-1 truncate">
           {badge.requirement}
         </p>
       </div>

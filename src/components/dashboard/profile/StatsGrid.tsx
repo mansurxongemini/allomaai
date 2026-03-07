@@ -100,7 +100,7 @@ export function StatsGrid({ stats, isLoading }: StatsGridProps) {
             <div
               key={s.key}
               className={cn(
-                "flex flex-col items-center gap-2 rounded-2xl border bg-white p-4 shadow-sm transition-shadow hover:shadow-md",
+                "flex flex-col items-center gap-2 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:shadow-md",
                 s.border
               )}
             >
@@ -113,15 +113,15 @@ export function StatsGrid({ stats, isLoading }: StatsGridProps) {
                 <Icon className={cn("w-5 h-5", s.color)} />
               </div>
               <div className="text-center">
-                <p className="text-xl sm:text-2xl font-bold text-slate-800 tabular-nums">
+                <p className="text-2xl sm:text-3xl font-bold text-gray-800 tabular-nums tracking-tight">
                   {value}
                   {s.suffix ? (
-                    <span className="text-xs font-medium text-slate-400">
+                    <span className="text-xs font-medium text-gray-400 ml-0.5">
                       {s.suffix}
                     </span>
                   ) : null}
                 </p>
-                <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 leading-tight">
+                <p className="text-[10px] sm:text-xs font-medium text-gray-500 mt-0.5 uppercase tracking-wide">
                   {s.label}
                 </p>
               </div>

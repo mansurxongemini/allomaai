@@ -27,6 +27,7 @@ export default function Header() {
               <Image
                 src="/images/logo-black.svg"
                 className="block dark:hidden"
+                style={{ width: 'auto', height: 'auto' }}
                 alt="ALLOMA AI Logo"
                 width={180}
                 height={30}
@@ -35,6 +36,7 @@ export default function Header() {
               <Image
                 src="/images/logo-white.svg"
                 className="hidden dark:block"
+                style={{ width: 'auto', height: 'auto' }}
                 alt="ALLOMA AI Logo"
                 width={180}
                 height={30}

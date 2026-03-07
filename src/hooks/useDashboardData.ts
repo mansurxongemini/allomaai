@@ -77,6 +77,8 @@ export function useDashboardData() {
 
     // 2. Listen to Leaderboard (Top 10 users by XP)
     useEffect(() => {
+        if (!currentUser) return
+
         const q = query(
             collection(db, 'users'),
             orderBy('xp', 'desc'),
@@ -106,7 +108,7 @@ export function useDashboardData() {
         })
 
         return () => unsubscribe()
-    }, [])
+    }, [currentUser])
 
     // 3. Fetch Real Activity Data from `activities` collection
     useEffect(() => {

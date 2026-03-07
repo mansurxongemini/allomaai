@@ -46,6 +46,7 @@ export default function HeroSection() {
                 className="w-full rounded-2xl block dark:hidden"
                 width={966}
                 height={552}
+                priority
               />
               <Image
                 src="/images/hero/hero-img-dark.png"
@@ -53,6 +54,7 @@ export default function HeroSection() {
                 className="w-full rounded-2xl hidden dark:block"
                 width={966}
                 height={552}
+                priority
               />
             </div>
             <div className="absolute hidden lg:block z-10 -top-20 -translate-y-20 left-1/2 -translate-x-1/2">
@@ -122,6 +124,7 @@ export default function HeroSection() {
           <Image
             src="/images/hero/shape-left-1.svg"
             className="absolute top-14 left-16 floating-1"
+            style={{ width: 'auto', height: 'auto' }}
             alt=""
             width={170}
             height={44}
@@ -129,6 +132,7 @@ export default function HeroSection() {
           <Image
             src="/images/hero/shape-left-2.svg"
             className="absolute left-[145px] top-[298px] floating-2 max-[1240px]:left-[80px]"
+            style={{ width: 'auto', height: 'auto' }}
             alt=""
             width={181}
             height={44}
@@ -136,6 +140,7 @@ export default function HeroSection() {
           <Image
             src="/images/hero/shape-right-1.svg"
             className="absolute right-16 top-[108px] floating-3"
+            style={{ width: 'auto', height: 'auto' }}
             alt=""
             width={176}
             height={44}
@@ -143,6 +148,7 @@ export default function HeroSection() {
           <Image
             src="/images/hero/shape-right-2.svg"
             className="absolute top-[316px] right-[200px] floating-4 max-[1240px]:right-[80px] max-[1350px]:right-[150px] max-[1500px]:right-[200px]"
+            style={{ width: 'auto', height: 'auto' }}
             alt=""
             width={179}
             height={44}

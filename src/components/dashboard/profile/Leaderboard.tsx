@@ -14,9 +14,9 @@ interface LeaderboardProps {
 }
 
 function rankMedal(rank: number) {
-  if (rank === 1) return { bg: "bg-amber-400", text: "text-white" }
-  if (rank === 2) return { bg: "bg-slate-300", text: "text-white" }
-  if (rank === 3) return { bg: "bg-orange-400", text: "text-white" }
+  if (rank === 1) return { bg: "bg-gradient-to-br from-amber-400 to-amber-600", text: "text-white" }
+  if (rank === 2) return { bg: "bg-gradient-to-br from-slate-300 to-slate-400", text: "text-white" }
+  if (rank === 3) return { bg: "bg-gradient-to-br from-orange-400 to-orange-600", text: "text-white" }
   return null
 }
 
@@ -41,7 +41,7 @@ export function Leaderboard({ entries, currentUsername, isLoading }: Leaderboard
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+    <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
       <div className="flex items-center gap-2 mb-4">
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 shrink-0">
           <Crown className="w-4 h-4 text-amber-600" />
@@ -62,10 +62,10 @@ export function Leaderboard({ entries, currentUsername, isLoading }: Leaderboard
             <div
               key={entry.username}
               className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors",
+                "flex items-center gap-3 rounded-xl px-3 py-3 transition-all duration-200",
                 isCurrent
-                  ? "bg-teal-50 border border-teal-200"
-                  : "hover:bg-slate-50"
+                  ? "bg-teal-50/50 border border-teal-100 shadow-sm shadow-teal-500/5 scale-[1.02] z-10"
+                  : "hover:bg-slate-50 border border-transparent"
               )}
             >
               {/* Rank */}
@@ -108,7 +108,7 @@ export function Leaderboard({ entries, currentUsername, isLoading }: Leaderboard
                     {entry.name}
                   </p>
                   {isCurrent && (
-                    <span className="shrink-0 rounded-full bg-teal-600 px-1.5 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider">
+                    <span className="shrink-0 rounded-full bg-gradient-to-r from-teal-500 to-emerald-600 px-2 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider shadow-sm">
                       Siz
                     </span>
                   )}

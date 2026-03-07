@@ -11,7 +11,8 @@ import {
     deleteDoc,
     increment,
     serverTimestamp,
-    getCountFromServer
+    getCountFromServer,
+    runTransaction
 } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -90,22 +91,11 @@ export async function getSubjects(): Promise<Subject[]> {
 
         const subjects = querySnapshot.docs.map(doc => ({
             id: doc.id,
+            topicsCount: doc.data().topicsCount || 0,
             ...doc.data()
         })) as Subject[];
 
-        // Fetch actual counts for each subject to ensure accuracy and fix any existing inconsistencies
-        const subjectsWithCounts = await Promise.all(subjects.map(async (subject) => {
-            try {
-                const topicsRef = collection(db, 'subjects', subject.id, 'topics');
-                const snapshot = await getCountFromServer(topicsRef);
-                return { ...subject, topicsCount: snapshot.data().count };
-            } catch (error) {
-                console.error(`Error fetching count for subject ${subject.id}:`, error);
-                return subject;
-            }
-        }));
-
-        return subjectsWithCounts;
+        return subjects;
     } catch (error) {
         console.error('Error fetching subjects:', error);
         throw error;
@@ -161,22 +151,23 @@ export async function addSubject(data: Partial<Subject>): Promise<void> {
  */
 export async function addTopic(subjectId: string, data: Partial<Topic>): Promise<void> {
     try {
-        const topicsRef = collection(db, 'subjects', subjectId, 'topics');
-        const topicId = doc(topicsRef).id;
-        const topicRef = doc(db, 'subjects', subjectId, 'topics', topicId);
+        await runTransaction(db, async (transaction) => {
+            const topicsRef = collection(db, 'subjects', subjectId, 'topics');
+            const topicId = doc(topicsRef).id;
+            const topicRef = doc(db, 'subjects', subjectId, 'topics', topicId);
+            const subjectRef = doc(db, 'subjects', subjectId);
 
-        await setDoc(topicRef, {
-            ...data,
-            id: topicId,
-            subjectId,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-        });
+            transaction.set(topicRef, {
+                ...data,
+                id: topicId,
+                subjectId,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
 
-        // Increment topicsCount in the parent subject
-        const subjectRef = doc(db, 'subjects', subjectId);
-        await updateDoc(subjectRef, {
-            topicsCount: increment(1)
+            transaction.update(subjectRef, {
+                topicsCount: increment(1)
+            });
         });
     } catch (error) {
         console.error('Error adding topic:', error);
@@ -210,13 +201,14 @@ export async function updateTopic(subjectId: string, topicId: string, data: Part
  */
 export async function deleteTopic(subjectId: string, topicId: string): Promise<void> {
     try {
-        const topicRef = doc(db, 'subjects', subjectId, 'topics', topicId);
-        await deleteDoc(topicRef);
+        await runTransaction(db, async (transaction) => {
+            const topicRef = doc(db, 'subjects', subjectId, 'topics', topicId);
+            const subjectRef = doc(db, 'subjects', subjectId);
 
-        // Decrement topicsCount in the parent subject
-        const subjectRef = doc(db, 'subjects', subjectId);
-        await updateDoc(subjectRef, {
-            topicsCount: increment(-1)
+            transaction.delete(topicRef);
+            transaction.update(subjectRef, {
+                topicsCount: increment(-1)
+            });
         });
     } catch (error) {
         console.error('Error deleting topic:', error);
@@ -295,21 +287,11 @@ export async function getMethods(): Promise<Method[]> {
 
         const methods = querySnapshot.docs.map(doc => ({
             id: doc.id,
+            topicsCount: doc.data().topicsCount || 0,
             ...doc.data()
         })) as Method[];
 
-        const methodsWithCounts = await Promise.all(methods.map(async (method) => {
-            try {
-                const topicsRef = collection(db, 'methods', method.id, 'topics');
-                const snapshot = await getCountFromServer(topicsRef);
-                return { ...method, topicsCount: snapshot.data().count };
-            } catch (error) {
-                console.error(`Error fetching count for method ${method.id}:`, error);
-                return method;
-            }
-        }));
-
-        return methodsWithCounts;
+        return methods;
     } catch (error) {
         console.error('Error fetching methods:', error);
         throw error;
@@ -377,14 +359,17 @@ export async function deleteMethod(methodId: string): Promise<void> {
  */
 export async function getMethodTopics(methodId: string): Promise<MethodTopic[]> {
     try {
+        // NOTE: Do NOT use orderBy here — it requires a composite Firestore index.
+        // We sort client-side instead to avoid index-related permission errors.
         const topicsRef = collection(db, 'methods', methodId, 'topics');
-        const q = query(topicsRef, orderBy('order', 'asc'));
-        const querySnapshot = await getDocs(q);
+        const querySnapshot = await getDocs(topicsRef);
 
-        return querySnapshot.docs.map(doc => ({
+        const topics = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         })) as MethodTopic[];
+
+        return topics.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     } catch (error) {
         console.error('Error fetching method topics:', error);
         throw error;
@@ -413,6 +398,10 @@ export async function getMethodTopicDetail(methodId: string, topicId: string): P
  */
 export async function addMethodTopic(methodId: string, data: Partial<MethodTopic>): Promise<void> {
     try {
+        // Use sequential writes (not a transaction) — same pattern as addSubject.
+        // Transactions that simultaneously write to a subcollection AND update the parent
+        // cause Firestore security rules to fail with "permission-denied" even when
+        // both paths are explicitly allowed.
         const topicsRef = collection(db, 'methods', methodId, 'topics');
         const topicId = doc(topicsRef).id;
         const topicRef = doc(db, 'methods', methodId, 'topics', topicId);
@@ -456,12 +445,17 @@ export async function updateMethodTopic(methodId: string, topicId: string, data:
  */
 export async function deleteMethodTopic(methodId: string, topicId: string): Promise<void> {
     try {
-        const topicRef = doc(db, 'methods', methodId, 'topics', topicId);
-        await deleteDoc(topicRef);
+        await runTransaction(db, async (transaction) => {
+            const topicRef = doc(db, 'methods', methodId, 'topics', topicId);
+            const methodRef = doc(db, 'methods', methodId);
 
-        const methodRef = doc(db, 'methods', methodId);
-        await updateDoc(methodRef, {
-            topicsCount: increment(-1)
+            // Firestore requires reading a document before updating it in a transaction
+            await transaction.get(methodRef);
+
+            transaction.delete(topicRef);
+            transaction.update(methodRef, {
+                topicsCount: increment(-1)
+            });
         });
     } catch (error) {
         console.error('Error deleting method topic:', error);
@@ -526,14 +520,26 @@ export async function getCaseDetail(caseId: string): Promise<CaseItem | null> {
 /** Creates a new case. Returns the new ID. */
 export async function addCase(subjectId: string, data: Partial<CaseItem>): Promise<string> {
     try {
-        const newRef = doc(collection(db, 'cases'));
-        await setDoc(newRef, {
-            ...data, id: newRef.id, subjectId, questionsCount: 0,
-            createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+        return await runTransaction(db, async (transaction) => {
+            const newCaseRef = doc(collection(db, 'cases'));
+            const subjectRef = doc(db, 'caseSubjects', subjectId);
+
+            transaction.set(newCaseRef, {
+                ...data,
+                id: newCaseRef.id,
+                subjectId,
+                questionsCount: 0,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+
+            transaction.update(subjectRef, { casesCount: increment(1) });
+            return newCaseRef.id;
         });
-        await updateDoc(doc(db, 'caseSubjects', subjectId), { casesCount: increment(1) });
-        return newRef.id;
-    } catch (error) { console.error('Error adding case:', error); throw error; }
+    } catch (error) {
+        console.error('Error adding case:', error);
+        throw error;
+    }
 }
 
 /** Updates an existing case (merge). */
@@ -546,9 +552,17 @@ export async function updateCaseItem(caseId: string, data: Partial<CaseItem>): P
 /** Deletes a case and decrements parent subject casesCount. */
 export async function deleteCase(subjectId: string, caseId: string): Promise<void> {
     try {
-        await deleteDoc(doc(db, 'cases', caseId));
-        await updateDoc(doc(db, 'caseSubjects', subjectId), { casesCount: increment(-1) });
-    } catch (error) { console.error('Error deleting case:', error); throw error; }
+        await runTransaction(db, async (transaction) => {
+            const caseRef = doc(db, 'cases', caseId);
+            const subjectRef = doc(db, 'caseSubjects', subjectId);
+
+            transaction.delete(caseRef);
+            transaction.update(subjectRef, { casesCount: increment(-1) });
+        });
+    } catch (error) {
+        console.error('Error deleting case:', error);
+        throw error;
+    }
 }
 
 /** Fetches all questions for a case, ordered by 'order'. */

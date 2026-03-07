@@ -1,12 +1,26 @@
 "use client"
 
 import { useState } from "react"
-import { Menu } from "lucide-react"
+import { Menu, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LabSidebar } from "./LabSidebar"
+import { useAuth } from "@/context/AuthContext"
 
 export function LabShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { currentUser, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[50vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+      </div>
+    )
+  }
+
+  if (!currentUser) {
+    return null // Redirection happens via middleware
+  }
 
   return (
     <div className="flex h-full min-h-[calc(100dvh-52px-env(safe-area-inset-bottom))] md:min-h-[100dvh]">

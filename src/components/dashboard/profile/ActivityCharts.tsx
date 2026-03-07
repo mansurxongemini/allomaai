@@ -35,7 +35,7 @@ const weeklyConfig = {
 export function WeeklyActivityChart({ data, isLoading }: WeeklyChartProps) {
   if (isLoading || !data) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+      <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <Skeleton className="w-8 h-8 rounded-lg" />
           <div className="space-y-1">
@@ -50,7 +50,7 @@ export function WeeklyActivityChart({ data, isLoading }: WeeklyChartProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+    <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
       <div className="flex items-center gap-2 mb-4">
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-teal-50 shrink-0">
           <BarChart3 className="w-4 h-4 text-teal-600" />
@@ -74,7 +74,7 @@ export function WeeklyActivityChart({ data, isLoading }: WeeklyChartProps) {
       </div>
 
       <ChartContainer config={weeklyConfig} className="h-[200px] sm:h-[240px] w-full">
-        <BarChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+        <BarChart data={data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
           <XAxis
             dataKey="date"
@@ -111,7 +111,7 @@ const hourlyConfig = {
 export function HourlyActivityChart({ data, isLoading }: HourlyChartProps) {
   if (isLoading || !data || data.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+      <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
         <div className="flex items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-2">
             <Skeleton className="w-8 h-8 rounded-lg" />
@@ -136,7 +136,7 @@ export function HourlyActivityChart({ data, isLoading }: HourlyChartProps) {
   )
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+    <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
       <div className="flex items-center justify-between gap-2 mb-4">
         <div className="flex items-center gap-2">
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-sky-50 shrink-0">
@@ -154,7 +154,7 @@ export function HourlyActivityChart({ data, isLoading }: HourlyChartProps) {
       </div>
 
       <ChartContainer config={hourlyConfig} className="h-[180px] sm:h-[220px] w-full">
-        <AreaChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
           <defs>
             <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#0d9488" stopOpacity={0.3} />

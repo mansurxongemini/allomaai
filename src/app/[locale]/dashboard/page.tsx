@@ -6,7 +6,6 @@ import { StreakCalendar } from "@/components/dashboard/profile/StreakCalendar"
 import { BadgesGrid } from "@/components/dashboard/profile/BadgesGrid"
 import { WeeklyActivityChart, HourlyActivityChart } from "@/components/dashboard/profile/ActivityCharts"
 import { Leaderboard } from "@/components/dashboard/profile/Leaderboard"
-import { GenerateDummyDataButton } from "@/components/dashboard/GenerateDummyDataButton"
 import { useDashboardData } from "@/hooks/useDashboardData"
 import { BADGE_DEFINITIONS } from "@/lib/gamification"
 
@@ -54,7 +53,6 @@ export default function DashboardPage() {
             Yutuqlaringiz, reytingingiz va faollik tahlili
           </p>
         </div>
-        <GenerateDummyDataButton />
       </div>
 
       {/* Sections stack */}

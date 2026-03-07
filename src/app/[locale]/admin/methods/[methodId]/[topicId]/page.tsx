@@ -17,6 +17,7 @@ import { getMethodTopicDetail, updateMethodTopic, addMethodTopic, getMethodTopic
 import { MethodTopic, Quiz } from "@/types"
 import { cn } from "@/lib/utils"
 import NextImage from "next/image"
+import { toast } from "sonner"
 
 export default function MethodTopicDetailPage() {
     const { methodId, topicId } = useParams()
@@ -134,9 +135,11 @@ export default function MethodTopicDetailPage() {
             } else {
                 await updateMethodTopic(methodId as string, topicId as string, topicData)
             }
+            toast.success("Muvaffaqiyatli saqlandi!")
             router.push(`/admin/methods/${methodId}`)
-        } catch (error) {
+        } catch (error: any) {
             console.error("Save error:", error)
+            toast.error(error?.message || "Xatolik yuz berdi. Ruxsatlarni tekshiring.")
         } finally {
             setIsSaving(false)
         }

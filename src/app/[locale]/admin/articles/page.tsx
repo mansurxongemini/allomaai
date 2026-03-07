@@ -1,6 +1,6 @@
 "use client"
 
-import { Trash2, User, FileText, ExternalLink, ShieldCheck, Clock, MoreVertical, Eye } from "lucide-react"
+import { Trash2, FileText, ShieldCheck, Clock, MoreVertical, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
