@@ -155,7 +155,16 @@ service cloud.firestore {
       allow update: if isAdmin();
       allow delete: if isAdmin();
 
-      // /methods/{methodId}/methodTopics/{topicId}
+      // /methods/{methodId}/topics/{topicId}
+      // Code accesses this path via getMethodTopics(), useChatContextOptions(), etc.
+      match /topics/{topicId} {
+        allow read: if true;
+        allow create: if isAdmin();
+        allow update: if isAdmin();
+        allow delete: if isAdmin();
+      }
+
+      // /methods/{methodId}/methodTopics/{topicId}  (legacy alias – kept for compatibility)
       match /methodTopics/{topicId} {
         allow read: if true;
         allow create: if isAdmin();

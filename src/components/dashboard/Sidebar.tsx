@@ -35,7 +35,7 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(true)
   const { currentUser } = useAuth()
 
   const handleLogout = async () => {
@@ -78,7 +78,7 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className={cn(
-        "flex flex-col gap-1.5 py-6 flex-1 transition-all duration-300",
+        "flex flex-col gap-1.5 py-6 flex-1 overflow-y-auto transition-all duration-300",
         isCollapsed ? "px-3" : "px-4"
       )}>
         {!isCollapsed && (
@@ -184,7 +184,7 @@ export function Sidebar() {
         >
           <div className={cn(
             "flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 transition-transform duration-300",
-            isCollapsed && "rotate-180"
+            !isCollapsed && "rotate-180"
           )}>
             <ChevronLeft className="h-4 w-4 text-slate-500" />
           </div>
@@ -198,7 +198,6 @@ export function Sidebar() {
         "bg-gradient-to-b from-transparent to-slate-50/50 dark:to-slate-900/50",
         isCollapsed ? "px-3 py-4" : "px-4 py-4"
       )}>
-
         <Button
           variant="ghost"
           size="sm"

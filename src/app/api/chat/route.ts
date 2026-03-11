@@ -1,7 +1,6 @@
 import { AI_MODEL } from '@/lib/ai/model';
 import { PROMPT } from '@/lib/ai/prompts';
-import { getMostRecentUserMessage } from '@/lib/utils';
-import { streamText } from 'ai';
+import { streamText, convertToModelMessages } from 'ai';
 import { getTopicDetail, getMethodTopicDetail, getSubjects, getMethods } from '@/services/firestore';
 
 export const maxDuration = 60;
@@ -9,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
-    const { messages, topicId } = await req.json();
+    const { messages, topicId, roleMode, systemInstructions, responseLength } = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
@@ -18,7 +17,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const userMessage = getMostRecentUserMessage(messages);
+    // Convert UIMessages (from ai-sdk v6 client) to ModelMessages for streamText
+    const modelMessages = await convertToModelMessages(messages);
+
+    const userMessage = modelMessages.filter((m) => m.role === 'user').at(-1);
 
     if (!userMessage) {
       return new Response(
@@ -37,6 +39,13 @@ export async function POST(req: Request) {
     }
 
     let systemPrompt = PROMPT;
+
+    // Apply role mode — custom instructions override the base prompt
+    if (roleMode === 'custom' && typeof systemInstructions === 'string' && systemInstructions.trim()) {
+      systemPrompt = systemInstructions.trim();
+    } else if (roleMode === 'learning') {
+      systemPrompt = `${PROMPT}\n\n## Learning Guide Mode\nBreak every concept down step by step using analogies and real-world examples. After each explanation, ask the user one comprehension question to reinforce their understanding.`;
+    }
 
     // Inject Context if topicId is selected
     if (topicId && topicId !== 'general') {
@@ -65,13 +74,21 @@ export async function POST(req: Request) {
         }
 
         if (topicContent) {
-          systemPrompt = `You are a legal assistant. Strictly base your answer on the following context:
+          if (roleMode === 'custom' && typeof systemInstructions === 'string' && systemInstructions.trim()) {
+            // Append topic context to custom instructions
+            systemPrompt = `${systemInstructions.trim()}\n\n## Context\n${topicContent}`;
+          } else {
+            systemPrompt = `You are a legal assistant. Strictly base your answer on the following context:
           
           <context>
           ${topicContent}
           </context>
           
           If the answer is not in the context, clearly say "Men bu savolga berilgan kontekst asosida javob bera olmayman, chunki ma'lumot yetarli emas" (I don't know based on the provided context). Answer in Uzbek.`;
+            if (roleMode === 'learning') {
+              systemPrompt += '\n\nBreak concepts down step by step. After explaining, ask the user one comprehension question.';
+            }
+          }
         }
       } catch (err) {
         console.error('[/api/chat] Error fetching topic context:', err);
@@ -79,16 +96,25 @@ export async function POST(req: Request) {
       }
     }
 
-    // Use gemini-3-flash-preview model
+    // Apply response length instructions
+    if (responseLength === 'shorter') {
+      systemPrompt += '\n\nKEEP IT SHORT: Respond concisely in 1-3 short paragraphs. Avoid unnecessary elaboration.';
+    } else if (responseLength === 'longer') {
+      systemPrompt += '\n\nBE THOROUGH: Provide comprehensive, detailed explanations with examples, nuances, and full context.';
+    }
+
+    const maxOutputTokens = responseLength === 'shorter' ? 512 : responseLength === 'longer' ? 4096 : 2048;
+
+    // Use gemini-2.5-flash-lite
     const result = await streamText({
       model: AI_MODEL as any,
       system: systemPrompt,
-      messages,
-      temperature: 0.7,
-      maxTokens: 2048,
+      messages: modelMessages,
+      temperature: 0.1,
+      maxOutputTokens,
     });
 
-    return result.toTextStreamResponse();
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error('[/api/chat] Error:', error);
 
@@ -101,7 +127,7 @@ export async function POST(req: Request) {
       return new Response(
         JSON.stringify({
           error: 'AI model mavjud emas. API kalitni tekshiring.',
-          details: 'Model: gemini-3-flash-preview'
+          details: 'Model: gemini-2.5-flash-lite'
         }),
         { status: 503, headers: { 'Content-Type': 'application/json' } }
       );

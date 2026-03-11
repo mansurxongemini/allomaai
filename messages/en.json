@@ -81,8 +81,8 @@
     "Auth": {
         "welcome_in": "Welcome back to ALLOMA AI",
         "welcome_up": "Welcome to ALLOMA AI",
-        "sub_in": "Sign in with your email and password",
-        "sub_up": "Enter your details to create an account",
+        "sub_in": "Sign in with your Google account",
+        "sub_up": "Create your account with Google",
         "or": "Or",
         "google": "Continue with Google",
         "github": "Continue with GitHub",

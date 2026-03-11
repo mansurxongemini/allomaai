@@ -81,8 +81,8 @@
     "Auth": {
         "welcome_in": "Добро пожаловать в ALLOMA AI",
         "welcome_up": "Добро пожаловать в ALLOMA AI",
-        "sub_in": "Войдите с помощью email и пароля",
-        "sub_up": "Введите данные для создания аккаунта",
+        "sub_in": "Войдите через Google",
+        "sub_up": "Зарегистрируйтесь через Google",
         "or": "Или",
         "google": "Продолжить с Google",
         "github": "Продолжить с GitHub",

@@ -81,8 +81,8 @@
     "Auth": {
         "welcome_in": "ALLOMA AI ga xush kelibsiz",
         "welcome_up": "ALLOMA AI ga xush kelibsiz",
-        "sub_in": "Email va parol orqali tizimga kiring",
-        "sub_up": "Ro'yxatdan o'tish uchun ma'lumotlaringizni kiriting",
+        "sub_in": "Google orqali tizimga kiring",
+        "sub_up": "Google orqali ro'yxatdan o'ting",
         "or": "Yoki",
         "google": "Google orqali davom etish",
         "github": "GitHub orqali davom etish",

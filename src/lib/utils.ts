@@ -1,4 +1,3 @@
-import type { Message } from 'ai';
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -14,13 +13,7 @@ export const getCurrentYear = (): number => {
   return new Date().getFullYear();
 };
 
-/**
- * AI chat mantiqi uchun foydalanuvchining oxirgi xabarini olish.
- */
-export function getMostRecentUserMessage(messages: Array<Message>) {
-  const userMessages = messages.filter((message) => message.role === 'user');
-  return userMessages.at(-1);
-}
+
 
 /**
  * Global xatolarni matn ko'rinishiga o'tkazish.

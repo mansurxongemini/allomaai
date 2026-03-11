@@ -1,8 +1,7 @@
 'use client';
 
 import { Link } from '@/i18n/routing';
-import { SignInWithGithub, SignInWithGoogle } from '../_components/social-auth';
-import SignInForm from './signin-form';
+import { SignInWithGoogle } from '../_components/social-auth';
 import { useTranslations } from 'next-intl';
 
 export default function SignInPage() {
@@ -21,22 +20,9 @@ export default function SignInPage() {
                 {t('sub_in')}
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row justify-center gap-y-3.5 gap-x-5">
+            <div className="flex justify-center">
               <SignInWithGoogle />
-              <SignInWithGithub />
             </div>
-            <div className="relative py-3 sm:py-5">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200 dark:border-gray-800"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="p-2 text-gray-400 bg-white dark:bg-dark-primary sm:px-5 sm:py-2">
-                  {t('or')}
-                </span>
-              </div>
-            </div>
-
-            <SignInForm />
 
             <div className="mt-5">
               <p className="text-gray-700 dark:text-gray-400 text-sm">
