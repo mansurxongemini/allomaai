@@ -14,7 +14,8 @@ import {
     Search,
     Headset,
     Send,
-    Lightbulb
+    Lightbulb,
+    BarChart2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -29,6 +30,7 @@ const navItems = [
     { label: "Maqolalar", href: "/admin/articles", icon: FileText },
     { label: "Bloglar", href: "/admin/blogs", icon: PenTool },
     { label: "Foydalanuvchilar", href: "/admin/users", icon: Users },
+    { label: "Analitika", href: "/admin/analytics", icon: BarChart2 },
     { label: "Qo'llab-quvvatlash", href: "/admin/support", icon: Headset },
     { label: "Bildirishnomalar", href: "/admin/notifications", icon: Send },
 ]

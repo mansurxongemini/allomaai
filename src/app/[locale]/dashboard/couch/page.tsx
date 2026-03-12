@@ -384,7 +384,7 @@ function NotebookMessage({ message }: { message: UIMessage }) {
   // extracts and persists it in the onFinish callback (zero extra API calls).
   const rawText = text
   let mainText = rawText
-  let promptTip = "NONE"
+  let promptTip = ""
 
   if (rawText.includes(PROMPT_TIP_DELIMITER)) {
     const parts = rawText.split(PROMPT_TIP_DELIMITER)
@@ -691,7 +691,8 @@ export default function CouchPage() {
     roleMode: appliedRole,
     systemInstructions: appliedInstructions,
     responseLength: appliedLength,
-  }), [selectedTopic, appliedRole, appliedInstructions, appliedLength])
+    userId: currentUser?.uid ?? null,
+  }), [selectedTopic, appliedRole, appliedInstructions, appliedLength, currentUser?.uid])
 
   async function handleFormSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()

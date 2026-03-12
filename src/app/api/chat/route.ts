@@ -2,7 +2,7 @@ import { AI_MODEL } from '@/lib/ai/model';
 import { PROMPT, STRICT_PROFESSOR_PROMPT, EMPATHETIC_FRIEND_PROMPT } from '@/lib/ai/prompts';
 import { PROMPT_TIP_DELIMITER, DOSYE_DELIMITER } from '@/lib/ai/constants';
 import { streamText, convertToModelMessages } from 'ai';
-import { getTopicDetail, getMethodTopicDetail, getSubjects, getMethods } from '@/services/firestore';
+import { getTopicDetail, getMethodTopicDetail, getSubjects, getMethods, getUserWeaknesses } from '@/services/firestore';
 import { updateStudentDosye } from '@/lib/firebase/analytics';
 
 export const maxDuration = 60;
@@ -115,12 +115,26 @@ export async function POST(req: Request) {
       systemPrompt += '\n\nBE THOROUGH: Provide comprehensive, detailed explanations with examples, nuances, and full context.';
     }
 
+    // Inject student memory (RAG): fetch previously detected weaknesses and
+    // prepend them to the prompt so the AI can tailor its response.
+    // Wrapped in its own try/catch so a Firestore failure never blocks the chat.
+    if (userId && typeof userId === 'string') {
+      try {
+        const weaknesses = await getUserWeaknesses(userId);
+        if (weaknesses.length > 0) {
+          systemPrompt += `\n\n[Maxfiy Ma'lumot (Talaba Dosyesi)]: Ushbu talaba avvalgi darslarda quyidagi mavzularda xato qilgan yoki qiynalgan: ${weaknesses.join(', ')}. Agar hozirgi savol shu mavzularga aloqador bo'lsa, ayniqsa qattiqqo'l bo'l, ko'proq tushuntir va nazorat savoli ber.`;
+        }
+      } catch (memErr) {
+        console.error('[/api/chat] Failed to fetch student weaknesses (non-fatal):', memErr);
+      }
+    }
+
     // AI Coach: always append the 3-part split-response instruction
     systemPrompt += `\n\nQAT'IY BUYRUQ: Sen har doim javobingni qat'iy 3 qismga bo'lib berishing shart. Boshqa format qabul qilinmaydi!
 
 1-qism: Foydalanuvchi savoliga asosiy huquqiy javobing.
 2-qism: '${PROMPT_TIP_DELIMITER}' ajratgichidan so'ng, foydalanuvchiga savolni qanday qilib yaxshiroq berish bo'yicha maslahat (yoki 'NONE').
-3-qism: '${DOSYE_DELIMITER}' ajratgichidan so'ng, foydalanuvchining ayni shu savolidagi yuridik yoki mantiqiy xatolari/zaifliklarini faqat vergul bilan ajratilgan mavzu nomlari orqali yoz (masalan: 'Mulk huquqi, Da\'vo muddati'). Agar xato qilmagan bo'lsa, 'NONE' deb yoz. 3-qism eng oxirida bo'lishi shart!
+3-qism: '${DOSYE_DELIMITER}' ajratgichidan so'ng, foydalanuvchining ayni shu savolidagi yuridik yoki mantiqiy xatolari/zaifliklarini faqat vergul bilan ajratilgan mavzu nomlari orqali yoz (masalan: 'Mulk huquqi, Da'vo muddati'). Agar xato qilmagan bo'lsa, 'NONE' deb yoz. 3-qism eng oxirida bo'lishi shart!
 
 Format namunasi:
 [Sening asosiy huquqiy javobing shu yerda...]
