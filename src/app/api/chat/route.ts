@@ -1,15 +1,52 @@
 import { AI_MODEL } from '@/lib/ai/model';
 import { PROMPT, STRICT_PROFESSOR_PROMPT, EMPATHETIC_FRIEND_PROMPT } from '@/lib/ai/prompts';
 import { PROMPT_TIP_DELIMITER } from '@/lib/ai/constants';
-import { streamText, convertToModelMessages } from 'ai';
+import { streamText, generateText, convertToModelMessages } from 'ai';
+import type { ModelMessage } from 'ai';
 import { getTopicDetail, getMethodTopicDetail, getSubjects, getMethods } from '@/services/firestore';
+import { updateStudentDosye } from '@/lib/firebase/analytics';
 
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
+/**
+ * Background task: uses a fast AI model to detect legal/logical mistakes in
+ * the chat and persists weakness tags to the student's Firebase profile.
+ * This is intentionally fire-and-forget — it must never block or crash the
+ * streaming response.
+ */
+async function extractAndSaveWeaknesses(
+    userId: string,
+    messages: ModelMessage[]
+): Promise<void> {
+    try {
+        const { text } = await generateText({
+            model: AI_MODEL as any,
+            messages: [
+                {
+                    role: 'user',
+                    // Limit to the last 10 messages to control cost and latency.
+                    content: `Analyze this chat. Did the user make any legal or logical mistakes? If yes, output ONLY a comma-separated list of the specific topics they failed at (e.g., 'Mulk huquqi, Shartnoma tuzish'). If no mistakes, output 'NONE'.\n\nChat:\n${JSON.stringify(messages.slice(-10))}`,
+                },
+            ],
+            maxOutputTokens: 512,
+            maxRetries: 0,
+        });
+
+        const result = text?.trim() ?? '';
+        if (result && result.toUpperCase() !== 'NONE') {
+            const tags = result.split(',').map((t) => t.trim()).filter(Boolean);
+            await updateStudentDosye(userId, tags);
+        }
+    } catch (error) {
+        // Non-fatal: never propagate errors from the background task.
+        console.error('[analytics] extractAndSaveWeaknesses error:', error);
+    }
+}
+
 export async function POST(req: Request) {
   try {
-    const { messages, topicId, roleMode, systemInstructions, responseLength } = await req.json();
+    const { messages, topicId, roleMode, systemInstructions, responseLength, userId } = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
@@ -138,6 +175,15 @@ export async function POST(req: Request) {
               ? usage.inputTokens + usage.outputTokens
               : 'N/A',
         });
+
+        // Background analytics: detect weaknesses and persist them to Firebase.
+        // Uses void + .catch so the callback stays synchronous and errors are
+        // swallowed without affecting the streaming response.
+        if (userId && typeof userId === 'string') {
+          extractAndSaveWeaknesses(userId, modelMessages).catch((err) => {
+            console.error('[analytics] Unhandled background task error:', err);
+          });
+        }
       },
     });
 
