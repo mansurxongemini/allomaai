@@ -1,5 +1,6 @@
 import { AI_MODEL } from '@/lib/ai/model';
 import { PROMPT, STRICT_PROFESSOR_PROMPT, EMPATHETIC_FRIEND_PROMPT } from '@/lib/ai/prompts';
+import { PROMPT_TIP_DELIMITER } from '@/lib/ai/constants';
 import { streamText, convertToModelMessages } from 'ai';
 import { getTopicDetail, getMethodTopicDetail, getSubjects, getMethods } from '@/services/firestore';
 
@@ -112,6 +113,9 @@ export async function POST(req: Request) {
     } else if (responseLength === 'longer') {
       systemPrompt += '\n\nBE THOROUGH: Provide comprehensive, detailed explanations with examples, nuances, and full context.';
     }
+
+    // AI Coach: always append the split-response instruction
+    systemPrompt += `\n\nQAT'IY BUYRUQ: Sen har doim javobingni ikkiga bo'lib berishing shart. 1-qism: Foydalanuvchi savoliga asosiy huquqiy javobing. 2-qism: Foydalanuvchiga qanday qilib savolni yaxshiroq va aniqroq berish bo'yicha maslahat. Bu ikki qismni har doim mana bu maxsus ajratgich bilan bo'lib yoz: '${PROMPT_TIP_DELIMITER}'. Agar foydalanuvchi savolni juda zo'r va aniq bergan bo'lsa, 2-qismga shunchaki 'NONE' deb yoz. Agar savol noaniq bo'lsa, uni qanday to'g'rilashni va detallar qo'shishni maslahat ber.`;
 
     const maxOutputTokens = responseLength === 'shorter' ? 512 : responseLength === 'longer' ? 4096 : 2048;
 
