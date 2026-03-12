@@ -16,7 +16,7 @@ import {
   X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { PROMPT_TIP_DELIMITER } from "@/lib/ai/constants"
+import { PROMPT_TIP_DELIMITER, DOSYE_DELIMITER } from "@/lib/ai/constants"
 import { useChat } from "@ai-sdk/react"
 import type { UIMessage } from "ai"
 import ReactMarkdown from "react-markdown"
@@ -378,11 +378,29 @@ function NotebookMessage({ message }: { message: UIMessage }) {
     )
   }
 
-  const DELIMITER = PROMPT_TIP_DELIMITER
-  const parts = text.split(DELIMITER, 2)
-  const mainText = parts[0].trim()
-  const rawTip = parts[1]?.trim()
-  const promptTip = rawTip && rawTip !== "NONE" ? rawTip : null
+  // Robust 3-part parsing — gracefully handles mid-stream states where
+  // delimiters may not have arrived yet.
+  // dosyeData is intentionally NOT captured here — the server already
+  // extracts and persists it in the onFinish callback (zero extra API calls).
+  const rawText = text
+  let mainText = rawText
+  let promptTip = ""
+
+  if (rawText.includes(PROMPT_TIP_DELIMITER)) {
+    const parts = rawText.split(PROMPT_TIP_DELIMITER)
+    mainText = parts[0]
+    const remaining = parts[1]
+    if (remaining.includes(DOSYE_DELIMITER)) {
+      promptTip = remaining.split(DOSYE_DELIMITER)[0].trim()
+    } else {
+      promptTip = remaining.trim()
+    }
+  } else if (rawText.includes(DOSYE_DELIMITER)) {
+    // Strip DOSYE section to prevent it from leaking into rendered text
+    mainText = rawText.split(DOSYE_DELIMITER)[0]
+  }
+
+  const showTip = promptTip.length > 0 && promptTip.toUpperCase() !== "NONE"
 
   return (
     <motion.div
@@ -397,9 +415,9 @@ function NotebookMessage({ message }: { message: UIMessage }) {
       </div>
       <div className="flex-1 min-w-0">
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-          {mainText}
+          {mainText.trim()}
         </ReactMarkdown>
-        {promptTip && (
+        {showTip && (
           <div className="mt-6 p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50">
             <div className="flex items-center gap-2 mb-2">
               <Lightbulb className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
@@ -673,7 +691,8 @@ export default function CouchPage() {
     roleMode: appliedRole,
     systemInstructions: appliedInstructions,
     responseLength: appliedLength,
-  }), [selectedTopic, appliedRole, appliedInstructions, appliedLength])
+    userId: currentUser?.uid ?? null,
+  }), [selectedTopic, appliedRole, appliedInstructions, appliedLength, currentUser?.uid])
 
   async function handleFormSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()

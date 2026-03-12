@@ -1,48 +1,12 @@
 import { AI_MODEL } from '@/lib/ai/model';
 import { PROMPT, STRICT_PROFESSOR_PROMPT, EMPATHETIC_FRIEND_PROMPT } from '@/lib/ai/prompts';
-import { PROMPT_TIP_DELIMITER } from '@/lib/ai/constants';
-import { streamText, generateText, convertToModelMessages } from 'ai';
-import type { ModelMessage } from 'ai';
-import { getTopicDetail, getMethodTopicDetail, getSubjects, getMethods } from '@/services/firestore';
+import { PROMPT_TIP_DELIMITER, DOSYE_DELIMITER } from '@/lib/ai/constants';
+import { streamText, convertToModelMessages } from 'ai';
+import { getTopicDetail, getMethodTopicDetail, getSubjects, getMethods, getUserWeaknesses } from '@/services/firestore';
 import { updateStudentDosye } from '@/lib/firebase/analytics';
 
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
-
-/**
- * Background task: uses a fast AI model to detect legal/logical mistakes in
- * the chat and persists weakness tags to the student's Firebase profile.
- * This is intentionally fire-and-forget — it must never block or crash the
- * streaming response.
- */
-async function extractAndSaveWeaknesses(
-    userId: string,
-    messages: ModelMessage[]
-): Promise<void> {
-    try {
-        const { text } = await generateText({
-            model: AI_MODEL as any,
-            messages: [
-                {
-                    role: 'user',
-                    // Limit to the last 10 messages to control cost and latency.
-                    content: `Analyze this chat. Did the user make any legal or logical mistakes? If yes, output ONLY a comma-separated list of the specific topics they failed at (e.g., 'Mulk huquqi, Shartnoma tuzish'). If no mistakes, output 'NONE'.\n\nChat:\n${JSON.stringify(messages.slice(-10))}`,
-                },
-            ],
-            maxOutputTokens: 512,
-            maxRetries: 0,
-        });
-
-        const result = text?.trim() ?? '';
-        if (result && result.toUpperCase() !== 'NONE') {
-            const tags = result.split(',').map((t) => t.trim()).filter(Boolean);
-            await updateStudentDosye(userId, tags);
-        }
-    } catch (error) {
-        // Non-fatal: never propagate errors from the background task.
-        console.error('[analytics] extractAndSaveWeaknesses error:', error);
-    }
-}
 
 export async function POST(req: Request) {
   try {
@@ -151,8 +115,33 @@ export async function POST(req: Request) {
       systemPrompt += '\n\nBE THOROUGH: Provide comprehensive, detailed explanations with examples, nuances, and full context.';
     }
 
-    // AI Coach: always append the split-response instruction
-    systemPrompt += `\n\nQAT'IY BUYRUQ: Sen har doim javobingni ikkiga bo'lib berishing shart. 1-qism: Foydalanuvchi savoliga asosiy huquqiy javobing. 2-qism: Foydalanuvchiga qanday qilib savolni yaxshiroq va aniqroq berish bo'yicha maslahat. Bu ikki qismni har doim mana bu maxsus ajratgich bilan bo'lib yoz: '${PROMPT_TIP_DELIMITER}'. Agar foydalanuvchi savolni juda zo'r va aniq bergan bo'lsa, 2-qismga shunchaki 'NONE' deb yoz. Agar savol noaniq bo'lsa, uni qanday to'g'rilashni va detallar qo'shishni maslahat ber.`;
+    // Inject student memory (RAG): fetch previously detected weaknesses and
+    // prepend them to the prompt so the AI can tailor its response.
+    // Wrapped in its own try/catch so a Firestore failure never blocks the chat.
+    if (userId && typeof userId === 'string') {
+      try {
+        const weaknesses = await getUserWeaknesses(userId);
+        if (weaknesses.length > 0) {
+          systemPrompt += `\n\n[Maxfiy Ma'lumot (Talaba Dosyesi)]: Ushbu talaba avvalgi darslarda quyidagi mavzularda xato qilgan yoki qiynalgan: ${weaknesses.join(', ')}. Agar hozirgi savol shu mavzularga aloqador bo'lsa, ayniqsa qattiqqo'l bo'l, ko'proq tushuntir va nazorat savoli ber.`;
+        }
+      } catch (memErr) {
+        console.error('[/api/chat] Failed to fetch student weaknesses (non-fatal):', memErr);
+      }
+    }
+
+    // AI Coach: always append the 3-part split-response instruction
+    systemPrompt += `\n\nQAT'IY BUYRUQ: Sen har doim javobingni qat'iy 3 qismga bo'lib berishing shart. Boshqa format qabul qilinmaydi!
+
+1-qism: Foydalanuvchi savoliga asosiy huquqiy javobing.
+2-qism: '${PROMPT_TIP_DELIMITER}' ajratgichidan so'ng, foydalanuvchiga savolni qanday qilib yaxshiroq berish bo'yicha maslahat (yoki 'NONE').
+3-qism: '${DOSYE_DELIMITER}' ajratgichidan so'ng, foydalanuvchining ayni shu savolidagi yuridik yoki mantiqiy xatolari/zaifliklarini faqat vergul bilan ajratilgan mavzu nomlari orqali yoz (masalan: 'Mulk huquqi, Da'vo muddati'). Agar xato qilmagan bo'lsa, 'NONE' deb yoz. 3-qism eng oxirida bo'lishi shart!
+
+Format namunasi:
+[Sening asosiy huquqiy javobing shu yerda...]
+${PROMPT_TIP_DELIMITER}
+[Sening maslahating yoki NONE]
+${DOSYE_DELIMITER}
+[Zaif mavzular ro'yxati yoki NONE]`;
 
     const maxOutputTokens = responseLength === 'shorter' ? 512 : responseLength === 'longer' ? 4096 : 2048;
 
@@ -166,7 +155,7 @@ export async function POST(req: Request) {
       // Disable automatic retries so a single 429 response is not retried
       // (the default of 2 retries causes 3× API calls per message when quota is exceeded)
       maxRetries: 0,
-      onFinish: ({ usage }) => {
+      onFinish: ({ text, usage }) => {
         console.log('[/api/chat] Token usage:', {
           promptTokens: usage?.inputTokens ?? 'N/A',
           outputTokens: usage?.outputTokens ?? 'N/A',
@@ -176,13 +165,21 @@ export async function POST(req: Request) {
               : 'N/A',
         });
 
-        // Background analytics: detect weaknesses and persist them to Firebase.
-        // Uses void + .catch so the callback stays synchronous and errors are
-        // swallowed without affecting the streaming response.
-        if (userId && typeof userId === 'string') {
-          extractAndSaveWeaknesses(userId, modelMessages).catch((err) => {
-            console.error('[analytics] Unhandled background task error:', err);
-          });
+        // Piggybacking analytics: extract the |||DOSYE||| part from the streamed
+        // response instead of making a separate background API call.
+        if (userId && typeof userId === 'string' && text) {
+          const dosyeIndex = text.indexOf(DOSYE_DELIMITER);
+          if (dosyeIndex !== -1) {
+            const dosyeRaw = text.slice(dosyeIndex + DOSYE_DELIMITER.length).trim();
+            if (dosyeRaw && dosyeRaw.toUpperCase() !== 'NONE') {
+              const tags = dosyeRaw.split(',').map((t) => t.trim()).filter(Boolean);
+              if (tags.length > 0) {
+                updateStudentDosye(userId, tags).catch((err) => {
+                  console.error('[analytics] updateStudentDosye error:', err);
+                });
+              }
+            }
+          }
         }
       },
     });
