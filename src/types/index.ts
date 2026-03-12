@@ -1,3 +1,10 @@
+export interface StudentAnalyticsProfile {
+    /** Legal topics or concepts the student has struggled with (deduplicated tags). */
+    weaknesses: string[];
+    /** Observed learning style, e.g. "needs more examples" or "struggles with logic". */
+    learningStyle: string;
+}
+
 export interface User {
     uid: string;
     displayName: string | null;
@@ -10,6 +17,8 @@ export interface User {
     role: 'student' | 'lawyer' | 'admin';
     purchasedCases?: string[]; // Array of caseItem IDs user has purchased
     createdAt: any;
+    /** Analytics & memory profile populated by background AI extraction. */
+    profile?: StudentAnalyticsProfile;
 }
 
 export interface Task {
