@@ -10,7 +10,7 @@ import { google } from '@ai-sdk/google';
  */
 
 // Faqat ishlaydigan model - gemini-3-flash-preview
-export const AI_MODEL = google('gemini-3-flash-preview');
+export const AI_MODEL = google('gemini-2.5-flash-lite');
 
 // Fallback ham shu model (boshqa model ishlamaydi)
-export const AI_MODEL_FALLBACK_1 = google('gemini-3-flash-preview');
+export const AI_MODEL_FALLBACK_1 = google('gemini-2.5-flash-lite');
