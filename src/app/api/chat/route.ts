@@ -112,6 +112,19 @@ export async function POST(req: Request) {
       messages: modelMessages,
       temperature: 0.1,
       maxOutputTokens,
+      // Disable automatic retries so a single 429 response is not retried
+      // (the default of 2 retries causes 3× API calls per message when quota is exceeded)
+      maxRetries: 0,
+      onFinish: ({ usage }) => {
+        console.log('[/api/chat] Token usage:', {
+          promptTokens: usage?.inputTokens ?? 'N/A',
+          outputTokens: usage?.outputTokens ?? 'N/A',
+          totalTokens:
+            usage?.inputTokens != null && usage?.outputTokens != null
+              ? usage.inputTokens + usage.outputTokens
+              : 'N/A',
+        });
+      },
     });
 
     return result.toUIMessageStreamResponse();
