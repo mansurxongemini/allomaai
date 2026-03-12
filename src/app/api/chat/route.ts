@@ -1,5 +1,5 @@
 import { AI_MODEL } from '@/lib/ai/model';
-import { PROMPT } from '@/lib/ai/prompts';
+import { PROMPT, STRICT_PROFESSOR_PROMPT, EMPATHETIC_FRIEND_PROMPT } from '@/lib/ai/prompts';
 import { streamText, convertToModelMessages } from 'ai';
 import { getTopicDetail, getMethodTopicDetail, getSubjects, getMethods } from '@/services/firestore';
 
@@ -43,6 +43,10 @@ export async function POST(req: Request) {
     // Apply role mode — custom instructions override the base prompt
     if (roleMode === 'custom' && typeof systemInstructions === 'string' && systemInstructions.trim()) {
       systemPrompt = systemInstructions.trim();
+    } else if (roleMode === 'professor') {
+      systemPrompt = STRICT_PROFESSOR_PROMPT;
+    } else if (roleMode === 'friend') {
+      systemPrompt = EMPATHETIC_FRIEND_PROMPT;
     } else if (roleMode === 'learning') {
       systemPrompt = `${PROMPT}\n\n## Learning Guide Mode\nBreak every concept down step by step using analogies and real-world examples. After each explanation, ask the user one comprehension question to reinforce their understanding.`;
     }
@@ -77,6 +81,12 @@ export async function POST(req: Request) {
           if (roleMode === 'custom' && typeof systemInstructions === 'string' && systemInstructions.trim()) {
             // Append topic context to custom instructions
             systemPrompt = `${systemInstructions.trim()}\n\n## Context\n${topicContent}`;
+          } else if (roleMode === 'professor') {
+            // Strict Professor: inject context into the professor persona
+            systemPrompt = `${STRICT_PROFESSOR_PROMPT}\n\n## Berilgan kontekst (RAG)\nQuyidagi materialga qat'iy asoslanib javob bering:\n<context>\n${topicContent}\n</context>\nAgar javob kontekstda bo'lmasa, aniq aytib o'ting.`;
+          } else if (roleMode === 'friend') {
+            // Empathetic Friend: inject context into the friend persona
+            systemPrompt = `${EMPATHETIC_FRIEND_PROMPT}\n\n## Mavzu bo'yicha ma'lumot\nQuyidagi materialdan foydalaning (kerak bo'lsa):\n<context>\n${topicContent}\n</context>`;
           } else {
             systemPrompt = `You are a legal assistant. Strictly base your answer on the following context:
           

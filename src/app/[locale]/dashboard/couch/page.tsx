@@ -44,7 +44,7 @@ import {
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
 /* ------------------------------------------------------------------ */
-type RoleMode = "default" | "learning" | "custom"
+type RoleMode = "default" | "learning" | "professor" | "friend" | "custom"
 type ResponseLength = "default" | "longer" | "shorter"
 
 /** Convert legacy messages (with `content` string) to UIMessage format (with `parts`) */
@@ -244,6 +244,8 @@ function ConfigureChatModal({
                     [
                       { key: "default", label: "Default" },
                       { key: "learning", label: "Learning Guide" },
+                      { key: "professor", label: "Strict Professor" },
+                      { key: "friend", label: "Empathetic Friend" },
                       { key: "custom", label: "Custom" },
                     ] as { key: RoleMode; label: string }[]
                   ).map(({ key, label }) => (
@@ -261,6 +263,17 @@ function ConfigureChatModal({
                     </button>
                   ))}
                 </div>
+                {/* Persona description */}
+                {roleMode === "professor" && (
+                  <p className="mt-2 text-[12px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    🎓 <strong>Qat'iy Professor</strong> — Rasmiy akademik uslub. Huquqiy tushunchalarni ta'rif → element → qonuniy asos → kazus formatida tushuntiradi va nazorat savollari beradi.
+                  </p>
+                )}
+                {roleMode === "friend" && (
+                  <p className="mt-2 text-[12px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    🤝 <strong>Empatik Do'st</strong> — Iliq va qo'llab-quvvatlovchi uslub. Murakkab huquqiy tushunchalarni oddiy hayotiy misollar orqali tushuntiradi va rag'batlantiradi.
+                  </p>
+                )}
               </div>
 
               {/* Custom Instructions Textarea */}
@@ -432,12 +445,20 @@ function WelcomeState({
       <h2 className="text-2xl sm:text-3xl font-semibold text-slate-800 dark:text-slate-100 mb-2 tracking-tight">
         {roleMode === "learning"
           ? "O'qishni boshlaylik!"
+          : roleMode === "professor"
+          ? "Darsni boshlaylik!"
+          : roleMode === "friend"
+          ? "Salom, do'stim! 👋"
           : roleMode === "custom"
           ? "Sozlangan AI Murabbiy"
           : "Assalomu alaykum!"}
       </h2>
       <p className="text-slate-500 dark:text-slate-400 text-base mb-10">
-        Huquqiy savolingizni bering
+        {roleMode === "professor"
+          ? "Huquqiy savolingizni aniq va to'liq yozing"
+          : roleMode === "friend"
+          ? "Hech qanday savol ahmoqona emas — so'rang!"
+          : "Huquqiy savolingizni bering"}
       </p>
 
       <div className="flex flex-wrap justify-center gap-2.5 max-w-xl">
