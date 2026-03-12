@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { PROMPT_TIP_DELIMITER } from "@/lib/ai/constants"
 import { useChat } from "@ai-sdk/react"
 import type { UIMessage } from "ai"
 import ReactMarkdown from "react-markdown"
@@ -377,6 +378,12 @@ function NotebookMessage({ message }: { message: UIMessage }) {
     )
   }
 
+  const DELIMITER = PROMPT_TIP_DELIMITER
+  const parts = text.split(DELIMITER, 2)
+  const mainText = parts[0].trim()
+  const rawTip = parts[1]?.trim()
+  const promptTip = rawTip && rawTip !== "NONE" ? rawTip : null
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
@@ -390,8 +397,21 @@ function NotebookMessage({ message }: { message: UIMessage }) {
       </div>
       <div className="flex-1 min-w-0">
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-          {text}
+          {mainText}
         </ReactMarkdown>
+        {promptTip && (
+          <div className="mt-6 p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50">
+            <div className="flex items-center gap-2 mb-2">
+              <Lightbulb className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
+              <span className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+                AI Murabbiy Maslahati
+              </span>
+            </div>
+            <p className="text-sm text-indigo-700 dark:text-indigo-300 leading-relaxed">
+              {promptTip}
+            </p>
+          </div>
+        )}
       </div>
     </motion.div>
   )
