@@ -1,6 +1,6 @@
 ﻿"use client"
 
-import { useState, useRef, useEffect, useCallback, Fragment } from "react"
+import { useState, useRef, useEffect, useCallback, useMemo, Fragment } from "react"
 import {
   MessageCircle,
   Send,
@@ -488,10 +488,39 @@ export default function CouchPage() {
   const [appliedInstructions, setAppliedInstructions] = useState("")
   const [appliedLength, setAppliedLength] = useState<ResponseLength>("default")
 
+  // Stable refs so that useChat callback identity doesn't change on every render
+  const activeSessionIdRef = useRef<string | null>(null)
+  const currentUserRef = useRef(currentUser)
+
+  useEffect(() => { activeSessionIdRef.current = activeSessionId }, [activeSessionId])
+  useEffect(() => { currentUserRef.current = currentUser }, [currentUser])
+
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [input, setInput] = useState("")
 
   useEffect(() => { setIsClient(true) }, [])
+
+  // Memoize callbacks so that useChat does not see a new options object on
+  // every render, which could trigger unnecessary internal re-initializations.
+  const handleFinish = useCallback(({ messages: allMessages }: { messages: unknown[] }) => {
+    setFetchError(null)
+    if (activeSessionIdRef.current && currentUserRef.current) {
+      updateChatMessages(activeSessionIdRef.current, allMessages as unknown as any[])
+    }
+  }, [])
+
+  const handleError = useCallback((err: unknown) => {
+    console.error("Chat error:", err)
+    const errorMsg = err instanceof Error ? err.message : String(err)
+    setFetchError(errorMsg)
+    if (errorMsg.includes("fetch")) {
+      toast.error("Server bilan aloqa qilishda xatolik", {
+        description: "Iltimos, internet ulanishini tekshiring yoki sahifani yangilang",
+      })
+    } else {
+      toast.error("AI bilan aloqa qilishda xatolik yuz berdi")
+    }
+  }, [])
 
   const {
     messages,
@@ -501,24 +530,8 @@ export default function CouchPage() {
     sendMessage,
     regenerate,
   } = useChat({
-    onFinish: ({ message, messages: allMessages }) => {
-      setFetchError(null)
-      if (activeSessionId && currentUser) {
-        updateChatMessages(activeSessionId, allMessages as unknown as any[])
-      }
-    },
-    onError: (err) => {
-      console.error("Chat error:", err)
-      const errorMsg = err instanceof Error ? err.message : String(err)
-      setFetchError(errorMsg)
-      if (errorMsg.includes("fetch")) {
-        toast.error("Server bilan aloqa qilishda xatolik", {
-          description: "Iltimos, internet ulanishini tekshiring yoki sahifani yangilang",
-        })
-      } else {
-        toast.error("AI bilan aloqa qilishda xatolik yuz berdi")
-      }
-    },
+    onFinish: handleFinish,
+    onError: handleError,
   })
 
   const isLoading = status === "submitted" || status === "streaming"
@@ -535,14 +548,14 @@ export default function CouchPage() {
     if (!currentUser) return
     const unsubscribe = subscribeToUserChats(currentUser.uid, (chats) => {
       setChatHistory(chats)
-      if (!hasInitializedSession.current && !activeSessionId && chats.length > 0) {
+      if (!hasInitializedSession.current && !activeSessionIdRef.current && chats.length > 0) {
         hasInitializedSession.current = true
         setActiveSessionId(chats[0].id)
         setMessages(toUIMessages(chats[0].messages))
       }
     })
     return () => unsubscribe()
-  }, [currentUser])
+  }, [currentUser, setMessages])
 
   const lastSavedMessageId = useRef<string | null>(null)
 
@@ -611,12 +624,15 @@ export default function CouchPage() {
     toast.success("Chat sozlamalari saqlandi")
   }
 
-  const chatBody = {
+  // Memoize chatBody so the reference only changes when the actual values change.
+  // This prevents accidentally passing new object references to sendMessage on
+  // every render, which could trigger extra renders in consuming components.
+  const chatBody = useMemo(() => ({
     topicId: selectedTopic,
     roleMode: appliedRole,
     systemInstructions: appliedInstructions,
     responseLength: appliedLength,
-  }
+  }), [selectedTopic, appliedRole, appliedInstructions, appliedLength])
 
   async function handleFormSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
