@@ -598,3 +598,28 @@ export async function deleteQuestion(caseId: string, questionId: string): Promis
         await updateDoc(doc(db, 'cases', caseId), { questionsCount: increment(-1) });
     } catch (error) { console.error('Error deleting question:', error); throw error; }
 }
+
+// ==========================================
+// Student Analytics
+// ==========================================
+
+/**
+ * Returns the list of weakness topic tags stored on a user's profile.
+ * Safe to call from the API route — returns an empty array on any error so
+ * a Firestore failure never breaks the chat response.
+ *
+ * @param userId - Firestore user document ID (users/{userId})
+ */
+export async function getUserWeaknesses(userId: string): Promise<string[]> {
+    if (!userId) return [];
+    try {
+        const userSnap = await getDoc(doc(db, 'users', userId));
+        if (!userSnap.exists()) return [];
+        const data = userSnap.data();
+        const weaknesses = data?.profile?.weaknesses;
+        return Array.isArray(weaknesses) ? weaknesses.filter((t: unknown) => typeof t === 'string' && t.trim().length > 0) : [];
+    } catch (error) {
+        console.error('[firestore] getUserWeaknesses error:', error);
+        return [];
+    }
+}
