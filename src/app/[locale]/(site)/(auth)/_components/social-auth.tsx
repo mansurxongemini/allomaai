@@ -32,7 +32,7 @@ export function SignInWithGoogle() {
           displayName: user.displayName,
           email: user.email,
           photoURL: user.photoURL,
-          xp: 0,
+          totalPoints: 0,
           coins: 0,
           level: 1,
           completedCases: 0,

@@ -1,16 +1,16 @@
 import { AI_MODEL } from '@/lib/ai/model';
-import { PROMPT, STRICT_PROFESSOR_PROMPT, EMPATHETIC_FRIEND_PROMPT } from '@/lib/ai/prompts';
-import { PROMPT_TIP_DELIMITER, DOSYE_DELIMITER } from '@/lib/ai/constants';
 import { streamText, convertToModelMessages } from 'ai';
-import { getTopicDetail, getMethodTopicDetail, getSubjects, getMethods, getUserWeaknesses } from '@/services/firestore';
-import { updateStudentDosye } from '@/lib/firebase/analytics';
+import { generateEmbedding } from '@/services/vectorService';
+import { getAdminFirestore } from '@/lib/firebase/admin';
 
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
+type ChatMode = 'personal' | 'professor';
+
 export async function POST(req: Request) {
   try {
-    const { messages, topicId, roleMode, systemInstructions, responseLength, userId } = await req.json();
+    const { messages, responseLength, mode } = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
@@ -40,115 +40,103 @@ export async function POST(req: Request) {
       );
     }
 
-    let systemPrompt = PROMPT;
+    // Extract plain text from the last user message for embedding.
+    const lastUserMessage = Array.isArray(userMessage.content)
+      ? userMessage.content
+          .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+          .map((p) => p.text)
+          .join(' ')
+      : typeof userMessage.content === 'string'
+      ? userMessage.content
+      : '';
 
-    // Apply role mode — custom instructions override the base prompt
-    if (roleMode === 'custom' && typeof systemInstructions === 'string' && systemInstructions.trim()) {
-      systemPrompt = systemInstructions.trim();
-    } else if (roleMode === 'professor') {
-      systemPrompt = STRICT_PROFESSOR_PROMPT;
-    } else if (roleMode === 'friend') {
-      systemPrompt = EMPATHETIC_FRIEND_PROMPT;
-    } else if (roleMode === 'learning') {
-      systemPrompt = `${PROMPT}\n\n## Learning Guide Mode\nBreak every concept down step by step using analogies and real-world examples. After each explanation, ask the user one comprehension question to reinforce their understanding.`;
-    }
-
-    // Inject Context if topicId is selected
-    if (topicId && topicId !== 'general') {
+    // RAG retrieval in POST scope as requested.
+    let retrievedContextString = 'Kontekst topilmadi.';
+    if (lastUserMessage.trim()) {
       try {
-        let topicContent = '';
-        const [subjects, methods] = await Promise.all([getSubjects(), getMethods()]);
+        const queryVector = await generateEmbedding(lastUserMessage);
+        const db = getAdminFirestore();
 
-        // Search across subjects
-        for (const subject of subjects) {
-          const detail = await getTopicDetail(subject.id, topicId);
-          if (detail) {
-            topicContent = detail.content || detail.firstPrinciples || '';
-            break;
-          }
-        }
+        const nearestSnapshot = await db
+          .collection('vector_memory')
+          .findNearest('embedding', queryVector, {
+            limit: 3,
+            distanceMeasure: 'COSINE',
+          })
+          .get();
 
-        // Search across methods
-        if (!topicContent) {
-          for (const method of methods) {
-            const detail = await getMethodTopicDetail(method.id, topicId);
-            if (detail) {
-              topicContent = detail.content || detail.firstPrinciples || '';
-              break;
-            }
-          }
-        }
+        const retrievedChunks = nearestSnapshot.docs.map((doc, index) => {
+          const data = doc.data();
+          const title = (data.metadata?.title as string) ?? `Manba-${index + 1}`;
+          const content = (data.content as string) ?? '';
+          return `[${index + 1}] ${title}\n${content}`;
+        });
 
-        if (topicContent) {
-          if (roleMode === 'custom' && typeof systemInstructions === 'string' && systemInstructions.trim()) {
-            // Append topic context to custom instructions
-            systemPrompt = `${systemInstructions.trim()}\n\n## Context\n${topicContent}`;
-          } else if (roleMode === 'professor') {
-            // Strict Professor: inject context into the professor persona
-            systemPrompt = `${STRICT_PROFESSOR_PROMPT}\n\n## Berilgan kontekst (RAG)\nQuyidagi materialga qat'iy asoslanib javob bering:\n<context>\n${topicContent}\n</context>\nAgar javob kontekstda bo'lmasa, aniq aytib o'ting.`;
-          } else if (roleMode === 'friend') {
-            // Empathetic Friend: inject context into the friend persona
-            systemPrompt = `${EMPATHETIC_FRIEND_PROMPT}\n\n## Mavzu bo'yicha ma'lumot\nQuyidagi materialdan foydalaning (kerak bo'lsa):\n<context>\n${topicContent}\n</context>`;
-          } else {
-            systemPrompt = `You are a legal assistant. Strictly base your answer on the following context:
-          
-          <context>
-          ${topicContent}
-          </context>
-          
-          If the answer is not in the context, clearly say "Men bu savolga berilgan kontekst asosida javob bera olmayman, chunki ma'lumot yetarli emas" (I don't know based on the provided context). Answer in Uzbek.`;
-            if (roleMode === 'learning') {
-              systemPrompt += '\n\nBreak concepts down step by step. After explaining, ask the user one comprehension question.';
-            }
-          }
+        if (retrievedChunks.length > 0) {
+          retrievedContextString = retrievedChunks.join('\n\n');
         }
-      } catch (err) {
-        console.error('[/api/chat] Error fetching topic context:', err);
-        // Fall back to general prompt if context fetching fails
+      } catch (ragError) {
+        console.error('[/api/chat] Vector retrieval failed (non-fatal):', ragError);
       }
     }
 
-    // Apply response length instructions
-    if (responseLength === 'shorter') {
-      systemPrompt += '\n\nKEEP IT SHORT: Respond concisely in 1-3 short paragraphs. Avoid unnecessary elaboration.';
-    } else if (responseLength === 'longer') {
-      systemPrompt += '\n\nBE THOROUGH: Provide comprehensive, detailed explanations with examples, nuances, and full context.';
-    }
+    const chatMode: ChatMode = mode === 'professor' ? 'professor' : 'personal';
 
-    // Inject student memory (RAG): fetch previously detected weaknesses and
-    // prepend them to the prompt so the AI can tailor its response.
-    // Wrapped in its own try/catch so a Firestore failure never blocks the chat.
-    if (userId && typeof userId === 'string') {
-      try {
-        const weaknesses = await getUserWeaknesses(userId);
-        if (weaknesses.length > 0) {
-          systemPrompt += `\n\n[Maxfiy Ma'lumot (Talaba Dosyesi)]: Ushbu talaba avvalgi darslarda quyidagi mavzularda xato qilgan yoki qiynalgan: ${weaknesses.join(', ')}. Agar hozirgi savol shu mavzularga aloqador bo'lsa, ayniqsa qattiqqo'l bo'l, ko'proq tushuntir va nazorat savoli ber.`;
-        }
-      } catch (memErr) {
-        console.error('[/api/chat] Failed to fetch student weaknesses (non-fatal):', memErr);
-      }
-    }
+    const personalAssistantPrompt = `<role>
+Sen "Alloma AI" tizimining aqlli, do'stona va ko'p tarmoqli Shaxsiy Yordamchisisan. Sening vazifang talabalarga shaxsiy rivojlanish, vaqtni boshqarish, o'qish motivatsiyasi va umumiy huquqiy savollarda tezkor hamda tushunarli yordam berishdir.
+</role>
 
-    // AI Coach: always append the 3-part split-response instruction
-    systemPrompt += `\n\nQAT'IY BUYRUQ: Sen har doim javobingni qat'iy 3 qismga bo'lib berishing shart. Boshqa format qabul qilinmaydi!
+<context>
+Quyida foydalanuvchining savoliga aloqador yuridik ma'lumotlar bazasidan (Vector DB) olingan faktlar keltirilgan:
+${retrievedContextString}
+</context>
 
-1-qism: Foydalanuvchi savoliga asosiy huquqiy javobing.
-2-qism: '${PROMPT_TIP_DELIMITER}' ajratgichidan so'ng, foydalanuvchiga savolni qanday qilib yaxshiroq berish bo'yicha maslahat (yoki 'NONE').
-3-qism: '${DOSYE_DELIMITER}' ajratgichidan so'ng, foydalanuvchining ayni shu savolidagi yuridik yoki mantiqiy xatolari/zaifliklarini faqat vergul bilan ajratilgan mavzu nomlari orqali yoz (masalan: 'Mulk huquqi, Da'vo muddati'). Agar xato qilmagan bo'lsa, 'NONE' deb yoz. 3-qism eng oxirida bo'lishi shart!
+<instructions>
+1. Muloqot uslubi: Do'stona, qo'llab-quvvatlovchi va sodda tilda yoz. Sen qattiqqo'l o'qituvchi emassan, balki ishonchli yordamchisan.
+2. Huquqiy savollarga javob berish:
+   - Agar savol huquqshunoslikka oid bo'lsa, BIRINCHI NAVBATDA <context> ichida berilgan ma'lumotlardan foydalan.
+   - Agar <context> ichida yetarli ma'lumot bo'lmasa, o'zingning umumiy huquqiy bilimlaring asosida erkin javob bergin.
+   - Lekin umumiy bilimlaringdan foydalansang, albatta "Bu ma'lumot tizim bazasidan tashqari umumiy qonunchilikka asoslangan, shuning uchun uni amaliyotda qo'llashdan oldin qonun hujjatlaridan tekshirib ko'ring" deb xushmuomalalik bilan ogohlantirib o't.
+3. Boshqa mavzular: Agar savol shaxsiy hayot, motivatsiya yoki boshqa sohalarga oid bo'lsa, o'z bilimlaring asosida eng yaxshi maslahatlarni ber.
+</instructions>`;
 
-Format namunasi:
-[Sening asosiy huquqiy javobing shu yerda...]
-${PROMPT_TIP_DELIMITER}
-[Sening maslahating yoki NONE]
-${DOSYE_DELIMITER}
-[Zaif mavzular ro'yxati yoki NONE]`;
+    const professorPrompt = `<role>
+Sen "Alloma AI" tizimining elita, qattiqqo'l Sokratik Huquq Professorisan (Socratic Law Professor). Sening vazifang huquqshunos talabalarga tayyor yechimlarni "chaynab" bermasdan, ularni chuqur tanqidiy va mantiqiy fikrlashga o'rgatishdir.
+</role>
+
+<context>
+Quyida qat'iy yuridik faktlar va qonun normalari (Vector DB) keltirilgan:
+${retrievedContextString}
+</context>
+
+<instructions>
+1. Gallyutsinatsiyasiz (Zero-Hallucination): Barcha tahlillaring va savollaring FAQAT <context> ichidagi ma'lumotlarga asoslanishi SHART. Agar <context> da savolga javob yoki qonun moddasi bo'lmasa, o'zingdan hech narsa to'qima. Shunchaki: "Kechirasiz, joriy ma'lumotlar bazamda bu savolga aniq qonuniy asos yo'q", deb javob ber.
+2. Sokratik Pedagogika: Talaba qisman to'g'ri fikr bildirsa, uni maqtab kichik g'alaba (micro-win) ber. So'ngra birdaniga hammasini tushuntirib tashlamasdan, masalani mikro-qadamlarga bo'l.
+3. Yo'naltiruvchi Savol: Har bir javobingning eng oxirida talabani keyingi mantiqiy xulosaga o'zi kelishiga undaydigan BITTA aniq Sokratik savol ber.
+4. Iqtibos: Har doim javobing oxirida <context> da berilgan qonun moddasi yoki manbani aniq ko'rsatib ket ("Manba: ...").
+</instructions>
+
+<thinking_process>
+Javob berishdan oldin doimo o'zing uchun quyidagi yashirin tahlilni (Self-Initiated CoT) amalga oshir, lekin buni talabaga ko'rsatma:
+- Talaba nimani so'rayapti?
+- <context> da qanday qoidalar bor?
+- Talaba tahlilning qaysi bosqichida va men unga qanday Sokratik savol bersam, o'zi to'g'ri javobni topadi?
+</thinking_process>`;
+
+    const baseSystemPrompt = chatMode === 'professor' ? professorPrompt : personalAssistantPrompt;
 
     const maxOutputTokens = responseLength === 'shorter' ? 512 : responseLength === 'longer' ? 4096 : 2048;
 
-    // Use gemini-2.5-flash-lite
+    const finalSystemPrompt =
+      responseLength === 'shorter'
+        ? `${baseSystemPrompt}\n\nQISQA JAVOB BERING: 1-2 qisqa paragraf bilan javob bering.`
+        : responseLength === 'longer'
+        ? `${baseSystemPrompt}\n\nBATAFSIL JAVOB BERING: Kontekstdan chiqmagan holda to'liqroq javob bering.`
+        : baseSystemPrompt;
+
     const result = await streamText({
       model: AI_MODEL as any,
-      system: systemPrompt,
+      system: finalSystemPrompt,
       messages: modelMessages,
       temperature: 0.1,
       maxOutputTokens,
@@ -164,23 +152,6 @@ ${DOSYE_DELIMITER}
               ? usage.inputTokens + usage.outputTokens
               : 'N/A',
         });
-
-        // Piggybacking analytics: extract the |||DOSYE||| part from the streamed
-        // response instead of making a separate background API call.
-        if (userId && typeof userId === 'string' && text) {
-          const dosyeIndex = text.indexOf(DOSYE_DELIMITER);
-          if (dosyeIndex !== -1) {
-            const dosyeRaw = text.slice(dosyeIndex + DOSYE_DELIMITER.length).trim();
-            if (dosyeRaw && dosyeRaw.toUpperCase() !== 'NONE') {
-              const tags = dosyeRaw.split(',').map((t) => t.trim()).filter(Boolean);
-              if (tags.length > 0) {
-                updateStudentDosye(userId, tags).catch((err) => {
-                  console.error('[analytics] updateStudentDosye error:', err);
-                });
-              }
-            }
-          }
-        }
       },
     });
 

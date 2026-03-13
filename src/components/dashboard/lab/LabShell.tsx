@@ -23,7 +23,7 @@ export function LabShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-full min-h-[calc(100dvh-52px-env(safe-area-inset-bottom))] md:min-h-[100dvh]">
+    <div className="flex h-full min-h-[calc(100dvh-52px-env(safe-area-inset-bottom))] overflow-hidden md:min-h-full">
       {/* Mobile Menu Button */}
       <Button
         variant="outline"
@@ -50,12 +50,12 @@ export function LabShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:block w-64 shrink-0">
+      <aside className="hidden h-full w-64 shrink-0 md:block">
         <LabSidebar />
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="min-w-0 flex-1 overflow-y-auto">
         {children}
       </div>
     </div>

@@ -35,7 +35,7 @@ const weeklyConfig = {
 export function WeeklyActivityChart({ data, isLoading }: WeeklyChartProps) {
   if (isLoading || !data) {
     return (
-      <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
+      <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Skeleton className="w-8 h-8 rounded-lg" />
           <div className="space-y-1">
@@ -50,14 +50,14 @@ export function WeeklyActivityChart({ data, isLoading }: WeeklyChartProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900 sm:p-6">
       <div className="flex items-center gap-2 mb-4">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-teal-50 shrink-0">
-          <BarChart3 className="w-4 h-4 text-teal-600" />
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
+          <BarChart3 className="w-4 h-4 text-slate-700 dark:text-slate-200" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-slate-800">Haftalik faollik</h3>
-          <p className="text-xs text-slate-400">Daqiqalar va ballar</p>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Haftalik faollik</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Daqiqalar va ballar</p>
         </div>
       </div>
 
@@ -65,11 +65,11 @@ export function WeeklyActivityChart({ data, isLoading }: WeeklyChartProps) {
       <div className="flex items-center gap-4 mb-3">
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: "#0d9488" }} />
-          <span className="text-xs text-slate-500">Daqiqalar</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">Daqiqalar</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: "#f59e0b" }} />
-          <span className="text-xs text-slate-500">Ballar</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">Ballar</span>
         </div>
       </div>
 
@@ -111,7 +111,7 @@ const hourlyConfig = {
 export function HourlyActivityChart({ data, isLoading }: HourlyChartProps) {
   if (isLoading || !data || data.length === 0) {
     return (
-      <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
+      <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-sm sm:p-6">
         <div className="flex items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-2">
             <Skeleton className="w-8 h-8 rounded-lg" />
@@ -136,7 +136,7 @@ export function HourlyActivityChart({ data, isLoading }: HourlyChartProps) {
   )
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-sm transition-shadow duration-200 hover:shadow-md sm:p-6">
       <div className="flex items-center justify-between gap-2 mb-4">
         <div className="flex items-center gap-2">
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-sky-50 shrink-0">

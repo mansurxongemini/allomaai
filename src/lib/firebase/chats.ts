@@ -16,6 +16,7 @@ export interface ChatSession {
     userId: string
     title: string
     messages: any[]
+    mode?: 'personal' | 'professor' | 'caseAnalyzer'
     createdAt: any
     updatedAt: any
 }
@@ -47,15 +48,31 @@ export function subscribeToUserChats(
 /**
  * Creates a new chat session for the user.
  */
-export async function createChatSession(userId: string, title: string = "Yangi suhbat"): Promise<string> {
+export async function createChatSession(
+    userId: string,
+    title: string = "Yangi suhbat",
+    mode: ChatSession['mode'] = 'personal'
+): Promise<string> {
     const docRef = await addDoc(collection(db, "chats"), {
         userId,
         title,
+        mode,
         messages: [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
     })
     return docRef.id
+}
+
+/**
+ * Updates chat mode in a specific chat session.
+ */
+export async function updateChatMode(chatId: string, mode: NonNullable<ChatSession['mode']>) {
+    if (!chatId) return
+    await updateDoc(doc(db, "chats", chatId), {
+        mode,
+        updatedAt: serverTimestamp(),
+    })
 }
 
 /**

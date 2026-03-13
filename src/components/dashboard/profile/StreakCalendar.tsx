@@ -15,7 +15,7 @@ interface StreakCalendarProps {
 export function StreakCalendar({ streak, weeklyStreak, isLoading }: StreakCalendarProps) {
   if (isLoading || !streak || !weeklyStreak) {
     return (
-      <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
+      <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-sm sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Skeleton className="w-8 h-8 rounded-lg" />
           <div className="space-y-1">
@@ -44,7 +44,7 @@ export function StreakCalendar({ streak, weeklyStreak, isLoading }: StreakCalend
   }
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-sm transition-shadow duration-200 hover:shadow-md sm:p-6">
       <div className="flex items-center gap-2 mb-4">
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-orange-50 shrink-0">
           <Flame className="w-4 h-4 text-orange-500" />

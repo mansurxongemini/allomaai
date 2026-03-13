@@ -22,8 +22,8 @@ export interface Badge {
 export interface Rank {
   level: number
   title: string
-  minXp: number
-  maxXp: number
+  minPoints: number
+  maxPoints: number
   color: string
 }
 
@@ -35,7 +35,6 @@ export interface UserProfile {
   avatarUrl: string | null
   joinedAt: string
   rank: Rank
-  xp: number
   totalPoints: number
   streak: {
     current: number
@@ -76,7 +75,7 @@ export interface LeaderboardEntry {
   rank: number
   name: string
   username: string
-  xp: number
+  totalPoints: number
   level: number
   streak: number
 }
@@ -85,27 +84,20 @@ export interface LeaderboardEntry {
 /* Ranks                                                               */
 /* ------------------------------------------------------------------ */
 export const RANKS: Rank[] = [
-  { level: 1, title: "Yangi talaba", minXp: 0, maxXp: 200, color: "#94a3b8" },
-  { level: 2, title: "Tinglovchi", minXp: 200, maxXp: 500, color: "#0d9488" },
-  { level: 3, title: "Tadqiqotchi", minXp: 500, maxXp: 1000, color: "#0891b2" },
-  { level: 4, title: "Tahlilchi", minXp: 1000, maxXp: 2000, color: "#7c3aed" },
-  { level: 5, title: "Mutaxassis", minXp: 2000, maxXp: 3500, color: "#db2777" },
-  { level: 6, title: "Ustoz", minXp: 3500, maxXp: 5000, color: "#ea580c" },
-  { level: 7, title: "Alloma", minXp: 5000, maxXp: 10000, color: "#ca8a04" },
+  { level: 1, title: "Yangi talaba", minPoints: 0, maxPoints: 200, color: "#94a3b8" },
+  { level: 2, title: "Tinglovchi", minPoints: 200, maxPoints: 500, color: "#0d9488" },
+  { level: 3, title: "Tadqiqotchi", minPoints: 500, maxPoints: 1000, color: "#0891b2" },
+  { level: 4, title: "Tahlilchi", minPoints: 1000, maxPoints: 2000, color: "#7c3aed" },
+  { level: 5, title: "Mutaxassis", minPoints: 2000, maxPoints: 3500, color: "#db2777" },
+  { level: 6, title: "Ustoz", minPoints: 3500, maxPoints: 5000, color: "#ea580c" },
+  { level: 7, title: "Alloma", minPoints: 5000, maxPoints: 10000, color: "#ca8a04" },
 ]
 
-export function getRank(xp: number): Rank {
+export function getRank(totalPoints: number): Rank {
   for (let i = RANKS.length - 1; i >= 0; i--) {
-    if (xp >= RANKS[i].minXp) return RANKS[i]
+    if (totalPoints >= RANKS[i].minPoints) return RANKS[i]
   }
   return RANKS[0]
-}
-
-export function getXpProgress(xp: number): number {
-  const rank = getRank(xp)
-  const range = rank.maxXp - rank.minXp
-  if (range <= 0) return 100
-  return Math.min(100, Math.round(((xp - rank.minXp) / range) * 100))
 }
 
 /* ------------------------------------------------------------------ */

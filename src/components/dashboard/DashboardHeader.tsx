@@ -18,10 +18,10 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
         <header className={cn(
             "sticky top-0 z-40 flex h-14 w-full items-center",
             "px-4 md:px-6",
-            "bg-white/70 dark:bg-slate-900/70",
-            "backdrop-blur-xl",
-            "border-b border-white/20 dark:border-white/5",
-            "shadow-sm shadow-slate-200/20 dark:shadow-none"
+            "bg-surface/85",
+            "backdrop-blur-md",
+            "border-b border-border",
+            "shadow-sm"
         )}>
             <Button
                 variant="ghost"

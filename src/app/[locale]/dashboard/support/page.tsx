@@ -21,6 +21,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import DOMPurify from "dompurify"
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import {
     Dialog,
     DialogContent,
@@ -198,7 +199,7 @@ export default function StudentSupportDashboard() {
     }
 
     return (
-        <div className="h-[calc(100vh-80px)] overflow-hidden flex flex-col gap-4 p-4 lg:p-6 lg:gap-6 bg-slate-50/50">
+        <div className="mx-auto flex h-[calc(100vh-80px)] w-full max-w-7xl flex-col gap-4 overflow-hidden p-4 lg:gap-6 lg:p-6">
             {/* Header - Hidden on mobile when chat is open */}
             <div className={cn("shrink-0 flex justify-between items-center", selectedTicketId ? "hidden md:flex" : "flex")}>
                 <div>
@@ -207,7 +208,7 @@ export default function StudentSupportDashboard() {
                 </div>
 
                 <Dialog open={isNewTicketOpen} onOpenChange={setIsNewTicketOpen}>
-                    <Button onClick={() => setIsNewTicketOpen(true)} className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-lg shadow-teal-600/20">
+                    <Button onClick={() => setIsNewTicketOpen(true)} className="rounded-[var(--radius-md)] shadow-sm hover:shadow-md">
                         <PlusCircle className="w-4 h-4 mr-2" />
                         <span className="hidden sm:inline">Yangi murojaat</span>
                         <span className="sm:hidden">Yangi</span>
@@ -268,27 +269,33 @@ export default function StudentSupportDashboard() {
             <div className="flex-1 flex flex-col md:flex-row gap-4 lg:gap-6 min-h-0 h-full overflow-hidden">
                 {/* Left Column: Tickets List */}
                 <Card className={cn(
-                    "w-full md:w-80 lg:w-96 flex flex-col border-slate-200 overflow-hidden shadow-sm h-full shrink-0",
+                    "h-full w-full shrink-0 overflow-hidden rounded-[var(--radius-lg)] border-border bg-surface shadow-sm md:w-80 lg:w-96",
                     selectedTicketId ? "hidden md:flex" : "flex"
                 )}>
                     {/* Active/Closed Tabs or Title */}
-                    <div className="p-4 border-b border-slate-100 bg-white shrink-0">
+                    <div className="shrink-0 border-b border-border bg-surface p-4">
                         <h3 className="font-semibold text-slate-800">Barcha murojaatlar</h3>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto w-full bg-slate-50/50">
+                    <div className="flex-1 w-full overflow-y-auto bg-slate-50/40 dark:bg-slate-900/20">
                         {isTicketsLoading ? (
                             <div className="flex justify-center items-center h-32 text-slate-400">
                                 <Loader2 className="w-6 h-6 animate-spin" />
                             </div>
                         ) : tickets.length === 0 ? (
-                            <div className="flex flex-col justify-center items-center p-10 text-center h-full">
-                                <MessageSquare className="w-12 h-12 text-slate-200 mb-4" />
-                                <p className="text-slate-500 font-medium mb-1">Sizda hozircha murojaatlar yo'q</p>
-                                <p className="text-slate-400 text-sm mb-6">Savolingiz bo'lsa bizga yozing!</p>
-                                <Link href="/support">
-                                    <Button variant="outline" className="rounded-xl">Yangi murojaat yozish</Button>
-                                </Link>
+                            <div className="flex h-full items-center justify-center p-6">
+                                <Empty className="min-h-[280px] rounded-[var(--radius-md)] border border-dashed border-border bg-surface">
+                                    <EmptyHeader>
+                                        <EmptyMedia variant="icon" className="bg-primary/10 text-primary">
+                                            <MessageSquare className="h-5 w-5" />
+                                        </EmptyMedia>
+                                        <EmptyTitle className="text-foreground">Ma&apos;lumot yo&apos;q</EmptyTitle>
+                                        <EmptyDescription>Sizda hozircha murojaatlar yo&apos;q. Yangi murojaat ochib, yordam so&apos;rashingiz mumkin.</EmptyDescription>
+                                    </EmptyHeader>
+                                    <EmptyContent>
+                                        <Button onClick={() => setIsNewTicketOpen(true)}>Yangi murojaat yozish</Button>
+                                    </EmptyContent>
+                                </Empty>
                             </div>
                         ) : (
                             <div className="p-2 space-y-2">
@@ -297,10 +304,10 @@ export default function StudentSupportDashboard() {
                                         key={ticket.id}
                                         onClick={() => setSelectedTicketId(ticket.id)}
                                         className={cn(
-                                            "p-4 rounded-xl border cursor-pointer transition-all",
+                                            "cursor-pointer rounded-[var(--radius-md)] border p-4 transition-colors duration-200",
                                             selectedTicketId === ticket.id
-                                                ? "bg-teal-50 border-teal-200 shadow-sm"
-                                                : "bg-white border-slate-100 hover:border-teal-100 hover:bg-slate-50"
+                                                ? "border-primary/15 bg-primary/10 shadow-sm"
+                                                : "border-border bg-surface hover:bg-slate-50"
                                         )}
                                     >
                                         <div className="flex justify-between items-start mb-2 gap-2">
@@ -330,13 +337,13 @@ export default function StudentSupportDashboard() {
 
                 {/* Right Column: Chat/Reply Area */}
                 <Card className={cn(
-                    "flex-1 flex-col border-slate-200 overflow-hidden shadow-sm min-h-0 h-full w-full",
+                    "min-h-0 h-full w-full flex-1 flex-col overflow-hidden rounded-[var(--radius-lg)] border-border bg-surface shadow-sm",
                     !selectedTicketId ? "hidden md:flex" : "flex"
                 )}>
                     {selectedTicket ? (
                         <>
                             {/* Chat Header */}
-                            <div className="p-3 md:p-4 border-b border-slate-100 flex items-center bg-white shrink-0 z-10 shadow-sm">
+                            <div className="z-10 flex items-center border-b border-border bg-surface p-3 shadow-sm md:p-4 shrink-0">
                                 <Button
                                     variant="ghost"
                                     size="icon"
@@ -354,7 +361,7 @@ export default function StudentSupportDashboard() {
                             </div>
 
                             {/* Messages Area */}
-                            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-[#f8fafc] w-full">
+                            <div className="w-full flex-1 overflow-y-auto space-y-4 bg-slate-50/40 p-4 md:p-6 dark:bg-slate-900/20">
                                 {isMessagesLoading ? (
                                     <div className="flex justify-center items-center py-10 text-slate-400">
                                         <Loader2 className="w-6 h-6 animate-spin" />
@@ -393,7 +400,7 @@ export default function StudentSupportDashboard() {
                             </div>
 
                             {/* Reply Area */}
-                            <div className="p-3 md:p-4 border-t border-slate-200 bg-white shrink-0 z-10 w-full mb-0">
+                            <div className="z-10 mb-0 w-full shrink-0 border-t border-border bg-surface p-3 md:p-4">
                                 {selectedTicket.status === "Yopilgan" ? (
                                     <div className="text-center p-3 text-slate-500 text-sm bg-slate-50 rounded-xl border border-slate-100">
                                         Murojaat yopilgan. Agar qo'shimcha savolingiz bo'lsa, iltimos yangi murojaat oching.
@@ -407,7 +414,7 @@ export default function StudentSupportDashboard() {
                                         />
                                         <div className="flex justify-end items-center w-full">
                                             <Button
-                                                className="h-9 rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-5 sm:px-6 text-sm font-semibold shadow-lg shadow-blue-600/20"
+                                                className="h-10 rounded-[var(--radius-md)] px-5 text-sm font-semibold shadow-sm hover:shadow-md sm:px-6"
                                                 onClick={handleSendReply}
                                                 disabled={isSending || !replyText.trim() || replyText === "<p></p>"}
                                             >
@@ -420,12 +427,16 @@ export default function StudentSupportDashboard() {
                             </div>
                         </>
                     ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8 text-center bg-transparent">
-                            <div className="w-16 h-16 rounded-2xl bg-white border shadow-sm flex items-center justify-center mb-4">
-                                <MessageSquare className="w-8 h-8 text-teal-600" />
-                            </div>
-                            <h3 className="text-lg font-semibold text-slate-800 mb-1">Murojaatlaringiz ko'rinishi</h3>
-                            <p className="text-sm">Xatlarni o'qish uchun chap tarafdan murojaatni tanlang</p>
+                        <div className="flex flex-1 items-center justify-center bg-transparent p-8 text-center text-slate-400">
+                            <Empty className="min-h-[320px] rounded-[var(--radius-md)] border border-dashed border-border bg-slate-50/60 dark:bg-slate-900/20">
+                                <EmptyHeader>
+                                    <EmptyMedia variant="icon" className="bg-primary/10 text-primary">
+                                        <MessageSquare className="h-5 w-5" />
+                                    </EmptyMedia>
+                                    <EmptyTitle className="text-foreground">Ma&apos;lumot yo&apos;q</EmptyTitle>
+                                    <EmptyDescription>Xabarlar tarixini ko&apos;rish uchun chap tarafdagi murojaatlardan birini tanlang.</EmptyDescription>
+                                </EmptyHeader>
+                            </Empty>
                         </div>
                     )}
                 </Card>

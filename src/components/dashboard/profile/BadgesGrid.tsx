@@ -33,7 +33,7 @@ interface BadgesGridProps {
 export function BadgesGrid({ badges, isLoading }: BadgesGridProps) {
   if (isLoading || !badges) {
     return (
-      <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
+      <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-sm sm:p-6">
         <div className="flex items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-2">
             <Skeleton className="w-8 h-8 rounded-lg" />
@@ -56,7 +56,7 @@ export function BadgesGrid({ badges, isLoading }: BadgesGridProps) {
   const locked = badges.filter((b) => !b.unlockedAt)
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-sm transition-shadow duration-200 hover:shadow-md sm:p-6">
       <div className="flex items-center justify-between gap-2 mb-4">
         <div className="flex items-center gap-2">
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 shrink-0">
@@ -106,10 +106,10 @@ function BadgeCard({ badge }: { badge: Badge }) {
   return (
     <div
       className={cn(
-        "flex flex-col items-center gap-2 rounded-xl border p-3 sm:p-4 transition-all duration-300",
+        "flex flex-col items-center gap-2 rounded-[var(--radius-md)] border p-3 transition-shadow duration-200 hover:shadow-md sm:p-4",
         isLocked && badge.progress < 100
           ? "border-slate-100 bg-slate-50/50 grayscale opacity-70"
-          : cn("bg-white shadow-sm hover:shadow-md border-gray-100", tier.border)
+          : cn("border-border bg-surface shadow-sm", tier.border)
       )}
     >
       <div

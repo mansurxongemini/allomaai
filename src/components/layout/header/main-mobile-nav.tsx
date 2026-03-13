@@ -17,7 +17,7 @@ export default function MainMobileNav({ isOpen }: MobileMenuProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="lg:hidden h-screen absolute top-full bg-white dark:bg-dark-primary w-full border-b border-gray-200 dark:border-gray-800">
+    <div className="absolute top-full z-40 h-screen w-full animate-slide-up border-b border-border bg-surface lg:hidden">
       <div className="flex flex-col justify-between">
         <div className="flex-1 overflow-y-auto">
           <div className="pt-2 pb-3 space-y-1 px-4 sm:px-6">
@@ -28,9 +28,10 @@ export default function MainMobileNav({ isOpen }: MobileMenuProps) {
                     key={item.href}
                     href={item.href as string}
                     className={cn(
-                      'block px-3 py-2 rounded-md text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700',
+                      'flex h-11 items-center rounded-[var(--radius-sm)] px-3 text-sm font-medium text-slate-700 transition-colors duration-200 ease-in-out hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-slate-200 dark:hover:bg-slate-800',
                       {
-                        'text-gray-800 dark:text-white': pathname === item.href,
+                        'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-50':
+                          pathname === item.href,
                       }
                     )}
                   >
@@ -50,14 +51,14 @@ export default function MainMobileNav({ isOpen }: MobileMenuProps) {
 
           <Link
             href="/signin"
-            className="text-sm block w-full border h-11 border-gray-200 px-5 py-3 rounded-full text-center font-medium text-gray-700 dark:text-gray-400 hover:text-primary-500"
+            className="inline-flex h-11 w-full items-center justify-center rounded-[var(--radius-md)] border border-border px-5 text-center text-sm font-medium text-slate-700 transition-colors duration-200 ease-in-out hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-slate-200 dark:hover:bg-slate-800"
           >
             {t('signin')}
           </Link>
 
           <Link
             href="/signup"
-            className="flex items-center px-5 py-3 gradient-btn justify-center text-sm text-white rounded-full button-bg h-11"
+            className="inline-flex h-11 w-full items-center justify-center rounded-[var(--radius-md)] bg-primary px-5 text-sm font-semibold text-white transition-colors duration-200 ease-in-out hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {t('get_started')}
           </Link>

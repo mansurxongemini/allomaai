@@ -138,7 +138,7 @@ export function AdminSidebar() {
 
     return (
         <aside className={cn(
-            "hidden md:flex flex-col shrink-0 border-r border-slate-200 bg-white h-screen sticky top-0 transition-all duration-300 z-50",
+            "hidden md:flex h-[100dvh] flex-col shrink-0 border-r border-slate-200 bg-white transition-all duration-300 z-50",
             isCollapsed ? "w-20" : "w-72"
         )}>
             {/* Logo */}

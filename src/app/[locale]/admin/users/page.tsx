@@ -27,7 +27,6 @@ const mockUsers = [
         name: "Sardorbek",
         email: "sardor@gmail.com",
         level: 5,
-        xp: 2450,
         role: "Admin",
         joinedDate: "2026-01-10",
         status: "Active"
@@ -37,7 +36,6 @@ const mockUsers = [
         name: "Mansurxon",
         email: "mansurxon@alloma.ai",
         level: 4,
-        xp: 1820,
         role: "Admin",
         joinedDate: "2026-01-12",
         status: "Active"
@@ -47,7 +45,6 @@ const mockUsers = [
         name: "Zulfiya Ismoilova",
         email: "zulfiya@student.uz",
         level: 3,
-        xp: 950,
         role: "Student",
         joinedDate: "2026-02-05",
         status: "Active"
@@ -57,7 +54,6 @@ const mockUsers = [
         name: "Bekzod Rahmonov",
         email: "bekzod.r@gmail.com",
         level: 2,
-        xp: 420,
         role: "Student",
         joinedDate: "2026-02-15",
         status: "Blocked"
@@ -67,7 +63,6 @@ const mockUsers = [
         name: "Nilufar G'aniyeva",
         email: "nilufar.g@proton.me",
         level: 4,
-        xp: 1560,
         role: "Student",
         joinedDate: "2026-02-18",
         status: "Active"
@@ -99,7 +94,7 @@ export default function UsersPage() {
                         <TableHeader className="bg-slate-50/50">
                             <TableRow className="border-slate-200">
                                 <TableHead className="py-4 pl-6 font-semibold text-slate-700">Foydalanuvchi</TableHead>
-                                <TableHead className="py-4 font-semibold text-slate-700">Daraja / XP</TableHead>
+                                <TableHead className="py-4 font-semibold text-slate-700">Daraja</TableHead>
                                 <TableHead className="py-4 font-semibold text-slate-700">Rol</TableHead>
                                 <TableHead className="py-4 font-semibold text-slate-700">Qo'shilgan sana</TableHead>
                                 <TableHead className="py-4 pr-6 text-right font-semibold text-slate-700">Harakatlar</TableHead>
@@ -126,15 +121,9 @@ export default function UsersPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell className="py-5">
-                                        <div className="flex flex-col gap-1.5">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xs font-bold text-slate-700">Lvl {user.level}</span>
-                                                <span className="h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-teal-500 rounded-full" style={{ width: `${(user.xp % 1000) / 10}%` }}></div>
-                                                </span>
-                                            </div>
-                                            <span className="text-[10px] text-slate-400 font-medium">{user.xp.toLocaleString()} XP</span>
-                                        </div>
+                                        <span className="inline-flex rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+                                            Daraja {user.level}
+                                        </span>
                                     </TableCell>
                                     <TableCell className="py-5">
                                         <Badge className={cn(
@@ -174,7 +163,7 @@ export default function UsersPage() {
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem className="rounded-lg cursor-pointer py-2 focus:bg-amber-50 focus:text-amber-700">
                                                         <Award className="w-4 h-4 mr-2.5" />
-                                                        XP berish
+                                                        Mukofot berish
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>

@@ -37,8 +37,8 @@ export function useDashboardData() {
                 const data = docSnap.data()
 
                 // Ensure data matches UserProfile structure, supply defaults for missing fields
-                const xp = data.xp || 0
-                const rank = getRank(xp)
+                const totalPoints = data.totalPoints || 0
+                const rank = getRank(totalPoints)
 
                 setProfile({
                     id: currentUser.uid,
@@ -47,8 +47,7 @@ export function useDashboardData() {
                     avatarUrl: currentUser.photoURL || data.avatarUrl || null,
                     joinedAt: data.joinedAt || new Date().toISOString(),
                     rank: rank,
-                    xp: xp,
-                    totalPoints: data.totalPoints || xp,
+                    totalPoints,
                     streak: {
                         current: data.streak?.current ?? data.streak ?? 0,
                         longest: data.streak?.longest ?? data.longestStreak ?? 0,
@@ -75,27 +74,27 @@ export function useDashboardData() {
         return () => unsubscribe()
     }, [currentUser])
 
-    // 2. Listen to Leaderboard (Top 10 users by XP)
+    // 2. Listen to Leaderboard (Top 10 users by points)
     useEffect(() => {
         if (!currentUser) return
 
         const q = query(
             collection(db, 'users'),
-            orderBy('xp', 'desc'),
+            orderBy('totalPoints', 'desc'),
             limit(10)
         )
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const entries: LeaderboardEntry[] = snapshot.docs.map((doc, index) => {
                 const data = doc.data()
-                const xp = data.xp || 0
-                const rank = getRank(xp)
+                const totalPoints = data.totalPoints || 0
+                const rank = getRank(totalPoints)
 
                 return {
                     rank: index + 1,
                     name: data.name || data.displayName || 'Anonim Foydalanuvchi',
                     username: data.email ? data.email.split('@')[0] : (data.username || `user_${doc.id.substring(0, 5)}`),
-                    xp: xp,
+                    totalPoints,
                     level: rank.level,
                     streak: data.streak?.current || 0
                 }
@@ -151,7 +150,7 @@ export function useDashboardData() {
                     // Daily aggregation
                     if (dailyMap[dateStr]) {
                         dailyMap[dateStr].points += amount
-                        // Estimate minutes from XP (rough: 1 XP ≈ 1 minute of study)
+                        // Estimate minutes from points for a rough study-time trend.
                         dailyMap[dateStr].minutes += Math.round(amount * 0.8)
                     }
 

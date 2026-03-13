@@ -3,6 +3,7 @@
 import { MinusIcon, PlusIcon } from "@/icons/icons";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { Button } from "@/components/ui/button";
 
 // Define the FAQ item type
 interface FAQItem {
@@ -66,9 +67,10 @@ function FAQItemComp({
 }) {
   return (
     <div className="pb-5 border-b border-gray-200 dark:border-gray-800">
-      <button
+      <Button
         type="button"
-        className="flex items-center justify-between w-full text-left"
+        variant="ghost"
+        className="flex h-auto w-full items-center justify-between p-0 text-left hover:bg-transparent"
         onClick={onToggle}
         aria-expanded={isActive}
       >
@@ -78,7 +80,7 @@ function FAQItemComp({
         <span className="flex-shrink-0 ml-6">
           {isActive ? <MinusIcon /> : <PlusIcon />}
         </span>
-      </button>
+      </Button>
       {isActive && (
         <div className="mt-5">
           <p className="text-base leading-7 text-gray-500 dark:text-gray-400">

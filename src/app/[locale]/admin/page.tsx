@@ -13,6 +13,8 @@ import {
     Download,
     Loader2,
     BookOpen,
+    Bug,
+    ChevronDown,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -32,6 +34,7 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -49,6 +52,7 @@ import {
     getCountFromServer,
 } from "firebase/firestore"
 import { formatRelativeTime } from "@/lib/date-utils"
+import { toast } from "sonner"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -67,6 +71,20 @@ interface BlogSubmission {
     authorName: string
     status: string
     createdAt: Date | null
+}
+
+interface SyncResult {
+    total: number
+    processed: number
+    failed: number
+    errors?: string[]
+}
+
+interface DebugLogEntry {
+    id: number
+    level: "info" | "error"
+    message: string
+    timestamp: string
 }
 
 /* ------------------------------------------------------------------ */
@@ -120,6 +138,101 @@ export default function AdminDashboardPage() {
     const [submissions, setSubmissions] = useState<BlogSubmission[]>([])
     const [loadingStats, setLoadingStats] = useState(true)
     const [loadingTable, setLoadingTable] = useState(true)
+    const [syncSecret, setSyncSecret] = useState("")
+    const [syncLoading, setSyncLoading] = useState(false)
+    const [syncResult, setSyncResult] = useState<SyncResult | null>(null)
+    const [debugOpen, setDebugOpen] = useState(false)
+    const [debugLogs, setDebugLogs] = useState<DebugLogEntry[]>([])
+    const [debugPayload, setDebugPayload] = useState("")
+
+    function pushDebugLog(level: "info" | "error", message: string) {
+        const entry: DebugLogEntry = {
+            id: Date.now() + Math.floor(Math.random() * 1000),
+            level,
+            message,
+            timestamp: new Date().toLocaleTimeString("uz-UZ"),
+        }
+
+        setDebugLogs((prev) => [entry, ...prev].slice(0, 20))
+    }
+
+    async function executeSyncRequest(trigger: "sync" | "verify") {
+        if (!syncSecret.trim()) {
+            pushDebugLog("error", "ADMIN_SYNC_SECRET kiritilmagan")
+            toast.error("ADMIN_SYNC_SECRET kiriting")
+            return null
+        }
+
+        setSyncLoading(true)
+        if (trigger === "sync") setSyncResult(null)
+
+        const startedAt = Date.now()
+        pushDebugLog("info", `${trigger.toUpperCase()} so'rovi boshlandi`)
+
+        try {
+            const res = await fetch("/api/admin/sync-vectors", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${syncSecret.trim()}`,
+                },
+            })
+
+            const elapsed = Date.now() - startedAt
+            pushDebugLog("info", `HTTP ${res.status} (${elapsed} ms)`)
+
+            const body = await res.json().catch(() => ({}))
+            const result: SyncResult = {
+                total: Number(body?.total ?? 0),
+                processed: Number(body?.processed ?? 0),
+                failed: Number(body?.failed ?? 0),
+                errors: Array.isArray(body?.errors) ? body.errors.map(String) : [],
+            }
+            setDebugPayload(JSON.stringify(result, null, 2))
+
+            if (res.status === 401) {
+                pushDebugLog("error", "Unauthorized: Bearer token noto'g'ri")
+                toast.error("Noto'g'ri secret yoki ruxsat yo'q")
+                return null
+            }
+
+            if (!res.ok) {
+                pushDebugLog("error", result.errors?.[0] ?? `Server xatosi: ${res.status}`)
+                toast.error(result.errors?.[0] ?? `Sync xatosi: ${res.status}`)
+                return null
+            }
+
+            setSyncResult(result)
+            pushDebugLog("info", `Natija: processed=${result.processed}, failed=${result.failed}`)
+
+            if (Array.isArray(result.errors) && result.errors.length > 0) {
+                result.errors.forEach((err) => pushDebugLog("error", err))
+            }
+
+            return result
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err)
+            pushDebugLog("error", `So'rov bajarilmadi: ${msg}`)
+            console.error("[admin-dashboard] sync-vectors request failed:", err)
+            toast.error("Tarmoq xatosi: sync amalga oshmadi")
+            return null
+        } finally {
+            setSyncLoading(false)
+        }
+    }
+
+    async function handleGlobalVectorSync() {
+        const result = await executeSyncRequest("sync")
+        if (!result) return
+        toast.success(`${result.processed || 0} ta maqola yuklandi, ${result.failed || 0} ta xato.`)
+    }
+
+    async function handleLiveVerify() {
+        setDebugOpen(true)
+        const data = await executeSyncRequest("verify")
+        if (!data) return
+
+        toast.success("Live verification yakunlandi. Debug panel yangilandi.")
+    }
 
     /* ------ Fetch Aggregated Stats ------ */
     useEffect(() => {
@@ -234,6 +347,95 @@ export default function AdminDashboardPage() {
                     </Button>
                 </div>
             </div>
+
+            <Card className="border-violet-100 bg-gradient-to-br from-violet-50/60 to-indigo-50/40 shadow-sm mb-10">
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base text-slate-800">AI Xotirasini Yangilash (Vector Sync)</CardTitle>
+                    <CardDescription>
+                        articles, blogs, cases va laws kolleksiyalaridagi vectorized bo'lmagan yozuvlar sinxronlanadi.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-col md:flex-row gap-3">
+                        <Input
+                            type="password"
+                            placeholder="ADMIN_SYNC_SECRET..."
+                            value={syncSecret}
+                            onChange={(e) => setSyncSecret(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleGlobalVectorSync()}
+                            disabled={syncLoading}
+                            className="md:max-w-md bg-white"
+                        />
+                        <Button
+                            onClick={handleGlobalVectorSync}
+                            disabled={syncLoading}
+                            className="bg-violet-600 hover:bg-violet-700 text-white"
+                        >
+                            {syncLoading ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Sync qilinmoqda...
+                                </>
+                            ) : (
+                                "Sync AI Memory"
+                            )}
+                        </Button>
+                        <Button
+                            onClick={handleLiveVerify}
+                            disabled={syncLoading}
+                            variant="outline"
+                            className="border-violet-200 text-violet-700 hover:bg-violet-50"
+                        >
+                            <Bug className="w-4 h-4 mr-2" />
+                            One-click Live Verify
+                        </Button>
+                    </div>
+                    {syncResult && (
+                        <p className="text-xs text-slate-600 mt-3">
+                            Jami: {syncResult.total}, Yuklandi: {syncResult.processed}, Xato: {syncResult.failed}
+                        </p>
+                    )}
+
+                    <div className="mt-4 border border-violet-100 rounded-xl bg-white/80">
+                        <button
+                            type="button"
+                            onClick={() => setDebugOpen((v) => !v)}
+                            className="w-full px-3 py-2.5 flex items-center justify-between text-left"
+                        >
+                            <span className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                                <Bug className="w-4 h-4 text-violet-600" />
+                                Sync Debug Panel
+                            </span>
+                            <ChevronDown className={cn("w-4 h-4 text-slate-500 transition-transform", debugOpen && "rotate-180")} />
+                        </button>
+
+                        {debugOpen && (
+                            <div className="px-3 pb-3 border-t border-violet-100 space-y-3">
+                                <div className="max-h-44 overflow-auto rounded-lg bg-slate-950 text-slate-100 p-2 text-xs font-mono">
+                                    {debugLogs.length === 0 ? (
+                                        <p className="text-slate-400">Hali log yo'q. "One-click Live Verify" tugmasini bosing.</p>
+                                    ) : (
+                                        debugLogs.map((log) => (
+                                            <p key={log.id} className={cn("leading-5", log.level === "error" ? "text-rose-300" : "text-emerald-300")}>
+                                                [{log.timestamp}] {log.level.toUpperCase()}: {log.message}
+                                            </p>
+                                        ))
+                                    )}
+                                </div>
+
+                                {debugPayload && (
+                                    <div>
+                                        <p className="text-xs font-medium text-slate-600 mb-1">Last Response Payload</p>
+                                        <pre className="max-h-44 overflow-auto rounded-lg bg-slate-100 text-slate-700 p-2 text-[11px] leading-5">
+                                            {debugPayload}
+                                        </pre>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">

@@ -8,6 +8,9 @@ import { db } from "@/lib/firebase"
 import { toast } from "sonner"
 import { compressImageToBase64 } from "@/lib/utils"
 import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 
 type SettingsTab = "profil" | "fanlar" | "korinish" | "xavfsizlik"
 
@@ -151,27 +154,27 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-white">
+      <div className="flex h-screen items-center justify-center bg-surface">
         <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
       </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-12 min-h-[calc(100vh-64px)] md:h-screen bg-white">
+    <div className="mx-auto grid min-h-[calc(100vh-64px)] w-full max-w-7xl grid-cols-12 gap-6 bg-transparent px-4 py-6 sm:px-6 sm:py-8 lg:py-10">
       {/* Left Sidebar (Navigation) */}
-      <aside className="col-span-12 md:col-span-3 bg-slate-100 border-r border-slate-200 p-6 overflow-y-auto">
+      <aside className="col-span-12 overflow-y-auto rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-sm md:col-span-3 md:p-6">
         <div className="mb-8 hidden md:block">
-          <h1 className="text-2xl font-bold text-slate-800 mb-1">Sozlamalar</h1>
-          <p className="text-sm text-slate-500">Hisobingizni boshqaring</p>
+          <h1 className="mb-1 text-2xl font-bold text-foreground">Sozlamalar</h1>
+          <p className="text-sm text-muted-foreground">Hisobingizni boshqaring</p>
         </div>
 
         <nav className="flex flex-row md:flex-col overflow-x-auto md:overflow-x-hidden gap-2 pb-2 md:pb-0">
           <button
             onClick={() => setActiveTab("profil")}
-            className={`flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg text-left transition-all whitespace-nowrap md:whitespace-normal ${activeTab === "profil"
-              ? "bg-teal-600 text-white shadow-md"
-              : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-200"
+            className={`flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-[var(--radius-md)] text-left transition-colors whitespace-nowrap md:whitespace-normal ${activeTab === "profil"
+              ? "bg-primary/10 text-primary border border-primary/15"
+              : "bg-surface text-slate-700 hover:bg-slate-50 border border-border"
               }`}
           >
             <User className="h-4 w-4 md:h-5 md:w-5" />
@@ -180,9 +183,9 @@ export default function SettingsPage() {
 
           <button
             onClick={() => setActiveTab("fanlar")}
-            className={`flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg text-left transition-all whitespace-nowrap md:whitespace-normal ${activeTab === "fanlar"
-              ? "bg-teal-600 text-white shadow-md"
-              : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-200"
+            className={`flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-[var(--radius-md)] text-left transition-colors whitespace-nowrap md:whitespace-normal ${activeTab === "fanlar"
+              ? "bg-primary/10 text-primary border border-primary/15"
+              : "bg-surface text-slate-700 hover:bg-slate-50 border border-border"
               }`}
           >
             <BookOpen className="h-4 w-4 md:h-5 md:w-5" />
@@ -191,9 +194,9 @@ export default function SettingsPage() {
 
           <button
             onClick={() => setActiveTab("korinish")}
-            className={`flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg text-left transition-all whitespace-nowrap md:whitespace-normal ${activeTab === "korinish"
-              ? "bg-teal-600 text-white shadow-md"
-              : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-200"
+            className={`flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-[var(--radius-md)] text-left transition-colors whitespace-nowrap md:whitespace-normal ${activeTab === "korinish"
+              ? "bg-primary/10 text-primary border border-primary/15"
+              : "bg-surface text-slate-700 hover:bg-slate-50 border border-border"
               }`}
           >
             <Palette className="h-4 w-4 md:h-5 md:w-5" />
@@ -202,9 +205,9 @@ export default function SettingsPage() {
 
           <button
             onClick={() => setActiveTab("xavfsizlik")}
-            className={`flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg text-left transition-all whitespace-nowrap md:whitespace-normal ${activeTab === "xavfsizlik"
-              ? "bg-teal-600 text-white shadow-md"
-              : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-200"
+            className={`flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-[var(--radius-md)] text-left transition-colors whitespace-nowrap md:whitespace-normal ${activeTab === "xavfsizlik"
+              ? "bg-primary/10 text-primary border border-primary/15"
+              : "bg-surface text-slate-700 hover:bg-slate-50 border border-border"
               }`}
           >
             <Shield className="h-4 w-4 md:h-5 md:w-5" />
@@ -214,15 +217,15 @@ export default function SettingsPage() {
       </aside>
 
       {/* Right Content Area */}
-      <main className="col-span-12 md:col-span-9 bg-white p-6 md:p-8 overflow-y-auto">
+      <main className="col-span-12 overflow-y-auto rounded-[var(--radius-lg)] border border-border bg-surface p-6 shadow-sm md:col-span-9 md:p-8">
         {/* Profil Tab */}
         {activeTab === "profil" && (
           <div className="max-w-3xl">
-            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mb-2">Profil</h2>
-            <p className="text-sm md:text-base text-slate-500 mb-8">Shaxsiy ma'lumotlaringizni tahrirlang</p>
+            <h2 className="mb-2 text-2xl font-bold text-foreground md:text-3xl">Profil</h2>
+            <p className="mb-8 text-sm text-muted-foreground md:text-base">Shaxsiy ma'lumotlaringizni tahrirlang</p>
 
             {/* Avatar Upload */}
-            <div className="mb-6 p-4 md:p-6 bg-slate-50 rounded-xl border border-slate-200">
+            <div className="mb-6 rounded-[var(--radius-lg)] border border-border bg-slate-50/70 p-4 md:p-6">
               <label className="block text-sm font-semibold text-slate-700 mb-4">
                 Profil rasmi
               </label>
@@ -248,13 +251,15 @@ export default function SettingsPage() {
                     ref={fileInputRef}
                     onChange={handleImageUpload}
                   />
-                  <button
+                  <Button
+                    type="button"
+                    variant="outline"
                     onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
+                    className="rounded-[var(--radius-md)]"
                   >
                     <Upload className="h-4 w-4" />
                     Rasm tanlash
-                  </button>
+                  </Button>
                   <p className="text-xs text-slate-500 mt-2">
                     JPG, PNG, WEBP. Maksimal o'lcham 400x400 (avtomatik siqiladi).
                   </p>
@@ -267,12 +272,11 @@ export default function SettingsPage() {
               <label htmlFor="name" className="block text-sm font-semibold text-slate-700 mb-2">
                 To'liq ism
               </label>
-              <input
+              <Input
                 id="name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full border border-slate-300 rounded-md p-3 text-slate-800 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all"
               />
             </div>
 
@@ -281,13 +285,13 @@ export default function SettingsPage() {
               <label htmlFor="bio" className="block text-sm font-semibold text-slate-700 mb-2">
                 Bio
               </label>
-              <textarea
+              <Textarea
                 id="bio"
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 rows={4}
                 maxLength={500}
-                className="w-full border border-slate-300 rounded-md p-3 text-slate-800 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all resize-none"
+                className="resize-none"
                 placeholder="O'zingiz haqingizda qisqacha yozing..."
               />
               <p className="text-xs text-slate-500 mt-2 text-right">
@@ -295,24 +299,24 @@ export default function SettingsPage() {
               </p>
             </div>
 
-            <button
+            <Button
               onClick={handleSaveProfile}
               disabled={saving}
-              className="bg-teal-600 text-white px-6 py-3 rounded-md hover:bg-teal-700 font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+              className="rounded-[var(--radius-md)]"
             >
               {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
               {saving ? "Saqlanmoqda..." : "O'zgarishlarni saqlash"}
-            </button>
+            </Button>
           </div>
         )}
 
         {/* Fanlar Tab */}
         {activeTab === "fanlar" && (
           <div className="max-w-3xl">
-            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mb-2">Fanlar va Qiziqishlar</h2>
-            <p className="text-sm md:text-base text-slate-500 mb-8">O'rganmoqchi bo'lgan fanlaringizni tanlang</p>
+            <h2 className="mb-2 text-2xl font-bold text-foreground md:text-3xl">Fanlar va Qiziqishlar</h2>
+            <p className="mb-8 text-sm text-muted-foreground md:text-base">O'rganmoqchi bo'lgan fanlaringizni tanlang</p>
 
-            <div className="p-4 md:p-6 bg-slate-50 rounded-xl border border-slate-200">
+            <div className="rounded-[var(--radius-lg)] border border-border bg-slate-50/70 p-4 md:p-6">
               <label className="block text-sm font-semibold text-slate-700 mb-4">
                 Tanlangan fanlar
               </label>
@@ -336,12 +340,12 @@ export default function SettingsPage() {
               </div>
 
               {/* Search Input */}
-              <input
+              <Input
                 type="text"
                 placeholder="Fan qidirish..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full border border-slate-300 rounded-md p-3 text-slate-800 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all mb-3"
+                className="mb-3"
               />
 
               {/* Dropdown Results */}
@@ -359,13 +363,13 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              <button
+              <Button
                 onClick={handleSaveProfile}
                 disabled={saving}
-                className="mt-4 bg-teal-600 text-white px-6 py-3 rounded-md hover:bg-teal-700 font-medium transition-colors disabled:opacity-70 flex items-center gap-2"
+                className="mt-4 rounded-[var(--radius-md)]"
               >
                 {saving ? "Saqlanmoqda..." : "Saqlash"}
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -373,11 +377,11 @@ export default function SettingsPage() {
         {/* Ko'rinish Tab */}
         {activeTab === "korinish" && (
           <div className="max-w-3xl">
-            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mb-2">Ko'rinish</h2>
-            <p className="text-sm md:text-base text-slate-500 mb-8">Interfeys ko'rinishini sozlang</p>
+            <h2 className="mb-2 text-2xl font-bold text-foreground md:text-3xl">Ko'rinish</h2>
+            <p className="mb-8 text-sm text-muted-foreground md:text-base">Interfeys ko'rinishini sozlang</p>
 
             {/* Font Size */}
-            <div className="mb-6 p-4 md:p-6 bg-slate-50 rounded-xl border border-slate-200">
+            <div className="mb-6 rounded-[var(--radius-lg)] border border-border bg-slate-50/70 p-4 md:p-6">
               <label className="block text-sm font-semibold text-slate-700 mb-4">
                 Shrift o'lchami
               </label>
@@ -390,7 +394,7 @@ export default function SettingsPage() {
                   <button
                     key={size.id}
                     onClick={() => setFontSize(size.id)}
-                    className={`px-4 py-4 rounded-lg border-2 text-sm font-medium transition-all ${fontSize === size.id
+                    className={`px-4 py-4 rounded-[var(--radius-md)] border-2 text-sm font-medium transition-colors ${fontSize === size.id
                       ? "border-teal-500 bg-teal-50 text-teal-700"
                       : "border-slate-300 text-slate-700 hover:border-slate-400 bg-white"
                       }`}
@@ -402,7 +406,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Theme */}
-            <div className="p-4 md:p-6 bg-slate-50 rounded-xl border border-slate-200 mb-6">
+            <div className="mb-6 rounded-[var(--radius-lg)] border border-border bg-slate-50/70 p-4 md:p-6">
               <label className="block text-sm font-semibold text-slate-700 mb-4">
                 Dizayn mavzusi
               </label>
@@ -415,7 +419,7 @@ export default function SettingsPage() {
                   <button
                     key={themeOption.id}
                     onClick={() => setTheme(themeOption.id)}
-                    className={`px-4 py-4 md:py-6 rounded-lg border-2 transition-all ${theme === themeOption.id
+                    className={`px-4 py-4 md:py-6 rounded-[var(--radius-md)] border-2 transition-colors ${theme === themeOption.id
                       ? "border-teal-500 bg-white shadow-sm"
                       : "border-slate-300 hover:border-slate-400 bg-white"
                       }`}
@@ -427,24 +431,24 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <button
+            <Button
               onClick={handleSaveProfile}
               disabled={saving}
-              className="bg-teal-600 text-white px-6 py-3 rounded-md hover:bg-teal-700 font-medium transition-colors disabled:opacity-70 flex items-center gap-2"
+              className="rounded-[var(--radius-md)]"
             >
               Saqlash
-            </button>
+            </Button>
           </div>
         )}
 
         {/* Xavfsizlik Tab */}
         {activeTab === "xavfsizlik" && (
           <div className="max-w-3xl">
-            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mb-2">Xavfsizlik</h2>
-            <p className="text-sm md:text-base text-slate-500 mb-8">Hisobingiz xavfsizligini boshqaring</p>
+            <h2 className="mb-2 text-2xl font-bold text-foreground md:text-3xl">Xavfsizlik</h2>
+            <p className="mb-8 text-sm text-muted-foreground md:text-base">Hisobingiz xavfsizligini boshqaring</p>
 
             {/* Change Password */}
-            <div className="mb-6 p-4 md:p-6 bg-slate-50 rounded-xl border border-slate-200">
+            <div className="mb-6 rounded-[var(--radius-lg)] border border-border bg-slate-50/70 p-4 md:p-6">
               <h3 className="text-sm font-semibold text-slate-800 mb-4">Parolni o'zgartirish</h3>
 
               <div className="space-y-4">
@@ -452,32 +456,31 @@ export default function SettingsPage() {
                   <label htmlFor="new-password" className="block text-sm text-slate-700 mb-2">
                     Yangi parol
                   </label>
-                  <input
+                  <Input
                     id="new-password"
                     type="password"
                     value={securityData.newPassword}
                     onChange={(e) =>
                       setSecurityData({ ...securityData, newPassword: e.target.value })
                     }
-                    className="w-full border border-slate-300 rounded-md p-3 text-slate-800 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all"
                   />
                 </div>
 
-                <button className="bg-teal-600 text-white px-6 py-3 rounded-md hover:bg-teal-700 font-medium transition-colors">
+                <Button className="rounded-[var(--radius-md)]">
                   Parolni yangilash
-                </button>
+                </Button>
               </div>
             </div>
 
             {/* Delete Account */}
-            <div className="p-4 md:p-6 bg-red-50 rounded-xl border border-red-200">
+            <div className="rounded-[var(--radius-lg)] border border-red-200 bg-red-50 p-4 md:p-6">
               <h3 className="text-sm font-semibold text-red-900 mb-2">Xavfli zona</h3>
               <p className="text-sm text-red-700 mb-4">
                 Hisobingizni o'chirsangiz, barcha ma'lumotlaringiz yo'qoladi va bu amal qaytarilmaydi.
               </p>
-              <button className="w-full md:w-auto bg-red-600 text-white px-6 py-3 rounded-md hover:bg-red-700 font-medium transition-colors">
+              <Button variant="destructive" className="w-full rounded-[var(--radius-md)] md:w-auto">
                 Hisobni o'chirish
-              </button>
+              </Button>
             </div>
           </div>
         )}

@@ -8,6 +8,7 @@ import {
 import { cn } from '@/lib/utils';
 import { PricingCard } from '@/components/sections/pricing/card';
 import { useTranslations } from 'next-intl';
+import { Button } from '@/components/ui/button';
 
 
 export default function PricingSection() {
@@ -35,13 +36,14 @@ export default function PricingSection() {
           <div className="flex justify-center relative z-30 mt-12">
             <div className="relative flex p-1 bg-white dark:bg-[#1D2939] rounded-full shadow-theme-xs">
               {BILLING_PERIODS.map((period) => (
-                <button
+                <Button
                   key={period.key}
+                  type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setActiveBillingPeriodKey(period.key)}
                   className={cn(
-                    'relative flex items-center gap-2 px-6 py-2 text-sm font-medium transition-colors duration-200' +
-                    ' rounded-full' +
-                    ' text-gray-700 dark:text-gray-400',
+                    'relative flex items-center gap-2 px-6 py-2 rounded-full text-gray-700 dark:text-gray-400 hover:bg-accent/10',
                     {
                       'bg-gray-800 dark:bg-white/[0.05] text-white dark:text-white':
                         period.key === activeBillingPeriodKey,
@@ -56,7 +58,7 @@ export default function PricingSection() {
                       {period.saving}
                     </span>
                   )}
-                </button>
+                </Button>
               ))}
             </div>
           </div>

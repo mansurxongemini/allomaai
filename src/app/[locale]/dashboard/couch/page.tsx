@@ -12,8 +12,7 @@ import {
   Trash2,
   Clock,
   BookOpen,
-  Settings2,
-  X,
+  Lock,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { PROMPT_TIP_DELIMITER, DOSYE_DELIMITER } from "@/lib/ai/constants"
@@ -27,11 +26,13 @@ import {
   subscribeToUserChats,
   createChatSession,
   updateChatMessages,
+  updateChatMode,
   deleteChatSession
 } from "@/lib/firebase/chats"
 import { toast } from "sonner"
 import { motion, AnimatePresence } from "framer-motion"
 import { useChatContextOptions } from "@/hooks/useChatContextOptions"
+import { useAutosave } from "@/hooks/useAutosave"
 import {
   Select,
   SelectContent,
@@ -46,7 +47,28 @@ import {
 /* Types                                                               */
 /* ------------------------------------------------------------------ */
 type RoleMode = "default" | "learning" | "professor" | "friend" | "custom"
-type ResponseLength = "default" | "longer" | "shorter"
+type ChatMode = "personal" | "professor" | "caseAnalyzer"
+const CHAT_MODE_STORAGE_KEY = "ai-couch-chat-mode"
+type IracStep = "issue" | "rule" | "application" | "conclusion"
+
+type RAGSource = {
+  id: string
+  title: string
+  snippet: string
+  similarity: number | null
+  sourceId: string | null
+  sourceType: string | null
+}
+
+type HintLadder = {
+  feedback: string
+  score: "A" | "B" | "C"
+  isCorrect: boolean
+  levels: [string, string, string]
+  revealedLevel: 0 | 1 | 2 | 3
+}
+
+const HINT_COSTS = [5, 10, 20] as const
 
 /** Convert legacy messages (with `content` string) to UIMessage format (with `parts`) */
 function toUIMessages(msgs: any[]): UIMessage[] {
@@ -168,189 +190,6 @@ const markdownComponents: Record<string, React.ComponentType<any>> = {
 }
 
 /* ------------------------------------------------------------------ */
-/* Configure Chat Modal                                                */
-/* ------------------------------------------------------------------ */
-interface ConfigureModalProps {
-  open: boolean
-  onClose: () => void
-  roleMode: RoleMode
-  onRoleChange: (r: RoleMode) => void
-  customInstructions: string
-  onInstructionsChange: (v: string) => void
-  responseLength: ResponseLength
-  onLengthChange: (l: ResponseLength) => void
-  onSave: () => void
-}
-
-function ConfigureChatModal({
-  open,
-  onClose,
-  roleMode,
-  onRoleChange,
-  customInstructions,
-  onInstructionsChange,
-  responseLength,
-  onLengthChange,
-  onSave,
-}: ConfigureModalProps) {
-  return (
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div
-            key="backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-50"
-          />
-          <motion.div
-            key="modal"
-            initial={{ opacity: 0, scale: 0.96, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 12 }}
-            transition={{ type: "spring", damping: 32, stiffness: 380 }}
-            className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 max-w-[520px] mx-auto bg-white dark:bg-[#1e1f20] rounded-2xl shadow-2xl border border-slate-200 dark:border-[#3c4043] overflow-hidden"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 pt-6 pb-5">
-              <h2 className="text-[17px] font-semibold text-slate-900 dark:text-slate-100">
-                Configure Chat
-              </h2>
-              <button
-                onClick={onClose}
-                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                <X className="w-5 h-5 text-slate-500" />
-              </button>
-            </div>
-
-            <div className="h-px bg-slate-200 dark:bg-slate-700" />
-
-            {/* Body */}
-            <div className="px-6 py-5 space-y-6">
-              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                Notebooks can be customized to help you achieve different goals: do research, help
-                learn, show various perspectives, or converse in a particular style and tone.
-              </p>
-
-              {/* Role Selection */}
-              <div>
-                <p className="text-[13px] font-medium text-slate-700 dark:text-slate-300 mb-3">
-                  Define your conversational goal, style, or role
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {(
-                    [
-                      { key: "default", label: "Default" },
-                      { key: "learning", label: "Learning Guide" },
-                      { key: "professor", label: "Strict Professor" },
-                      { key: "friend", label: "Empathetic Friend" },
-                      { key: "custom", label: "Custom" },
-                    ] as { key: RoleMode; label: string }[]
-                  ).map(({ key, label }) => (
-                    <button
-                      key={key}
-                      onClick={() => onRoleChange(key)}
-                      className={cn(
-                        "px-4 py-2 rounded-full text-sm font-medium border transition-all",
-                        roleMode === key
-                          ? "bg-blue-600 border-blue-600 text-white shadow-sm"
-                          : "border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800"
-                      )}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                {/* Persona description */}
-                {roleMode === "professor" && (
-                  <p className="mt-2 text-[12px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                    🎓 <strong>Qat'iy Professor</strong> — Rasmiy akademik uslub. Huquqiy tushunchalarni ta'rif → element → qonuniy asos → kazus formatida tushuntiradi va nazorat savollari beradi.
-                  </p>
-                )}
-                {roleMode === "friend" && (
-                  <p className="mt-2 text-[12px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                    🤝 <strong>Empatik Do'st</strong> — Iliq va qo'llab-quvvatlovchi uslub. Murakkab huquqiy tushunchalarni oddiy hayotiy misollar orqali tushuntiradi va rag'batlantiradi.
-                  </p>
-                )}
-              </div>
-
-              {/* Custom Instructions Textarea */}
-              <div className="relative">
-                <textarea
-                  value={customInstructions}
-                  onChange={(e) => onInstructionsChange(e.target.value.slice(0, 10000))}
-                  placeholder={
-                    roleMode === "custom"
-                      ? "Describe how you'd like the AI to respond, what role it should play, or any specific instructions..."
-                      : "Select 'Custom' to add your own instructions"
-                  }
-                  rows={5}
-                  disabled={roleMode !== "custom"}
-                  className={cn(
-                    "w-full resize-none rounded-xl border px-4 py-3 pb-7",
-                    "text-sm leading-relaxed focus:outline-none transition-all",
-                    roleMode === "custom"
-                      ? "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#2a2f3a] text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 dark:focus:border-blue-500"
-                      : "border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-[#252729] text-slate-400 dark:text-slate-600 cursor-not-allowed"
-                  )}
-                />
-                <span className="absolute bottom-2.5 right-3 text-[11px] text-slate-400 dark:text-slate-600 select-none">
-                  {customInstructions.length} / 10000
-                </span>
-              </div>
-
-              {/* Response Length */}
-              <div>
-                <p className="text-[13px] font-medium text-slate-700 dark:text-slate-300 mb-3">
-                  Choose your response length
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {(
-                    [
-                      { key: "default", label: "Default" },
-                      { key: "longer", label: "Longer" },
-                      { key: "shorter", label: "Shorter" },
-                    ] as { key: ResponseLength; label: string }[]
-                  ).map(({ key, label }) => (
-                    <button
-                      key={key}
-                      onClick={() => onLengthChange(key)}
-                      className={cn(
-                        "px-4 py-2 rounded-full text-sm font-medium border transition-all",
-                        responseLength === key
-                          ? "bg-blue-600 border-blue-600 text-white shadow-sm"
-                          : "border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800"
-                      )}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="h-px bg-slate-200 dark:bg-slate-700" />
-
-            {/* Footer */}
-            <div className="flex justify-end px-6 py-4">
-              <button
-                onClick={onSave}
-                className="px-7 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold rounded-full transition-colors shadow-sm"
-              >
-                Save
-              </button>
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  )
-}
-
-/* ------------------------------------------------------------------ */
 /* NotebookLM-style Message                                            */
 /* ------------------------------------------------------------------ */
 function getMessageText(message: UIMessage): string {
@@ -464,10 +303,10 @@ function TypingIndicator() {
 /* ------------------------------------------------------------------ */
 function WelcomeState({
   onSuggestionClick,
-  roleMode,
+  chatMode,
 }: {
   onSuggestionClick: (text: string) => void
-  roleMode: RoleMode
+  chatMode: ChatMode
 }) {
   return (
     <motion.div
@@ -481,21 +320,13 @@ function WelcomeState({
       </div>
 
       <h2 className="text-2xl sm:text-3xl font-semibold text-slate-800 dark:text-slate-100 mb-2 tracking-tight">
-        {roleMode === "learning"
-          ? "O'qishni boshlaylik!"
-          : roleMode === "professor"
+        {chatMode === "professor"
           ? "Darsni boshlaylik!"
-          : roleMode === "friend"
-          ? "Salom, do'stim! 👋"
-          : roleMode === "custom"
-          ? "Sozlangan AI Murabbiy"
           : "Assalomu alaykum!"}
       </h2>
       <p className="text-slate-500 dark:text-slate-400 text-base mb-10">
-        {roleMode === "professor"
+        {chatMode === "professor"
           ? "Huquqiy savolingizni aniq va to'liq yozing"
-          : roleMode === "friend"
-          ? "Hech qanday savol ahmoqona emas — so'rang!"
           : "Huquqiy savolingizni bering"}
       </p>
 
@@ -518,6 +349,176 @@ function WelcomeState({
   )
 }
 
+function getModeLabel(mode: ChatMode) {
+  if (mode === "professor") return "Professor"
+  if (mode === "caseAnalyzer") return "Kazus Tahlilchi"
+  return "Shaxsiy yordamchi"
+}
+
+/* ------------------------------------------------------------------ */
+/* Case Analyzer Workspace                                             */
+/* ------------------------------------------------------------------ */
+function CaseWorkspace({
+  activeIracStep,
+  setActiveIracStep,
+  iracDraft,
+  setIracDraft,
+  caseText,
+  setCaseText,
+  isCaseLocked,
+  setIsCaseLocked,
+  onEvaluateStep,
+  onRequestHint,
+  isCheckingStep,
+  isHintLoading,
+  hintLadders,
+}: {
+  activeIracStep: IracStep
+  setActiveIracStep: (step: IracStep) => void
+  iracDraft: Record<IracStep, string>
+  setIracDraft: React.Dispatch<React.SetStateAction<Record<IracStep, string>>>
+  caseText: string
+  setCaseText: React.Dispatch<React.SetStateAction<string>>
+  isCaseLocked: boolean
+  setIsCaseLocked: React.Dispatch<React.SetStateAction<boolean>>
+  onEvaluateStep: (step: IracStep) => Promise<boolean>
+  onRequestHint: (step: IracStep) => Promise<void>
+  isCheckingStep: boolean
+  isHintLoading: boolean
+  hintLadders: Partial<Record<IracStep, HintLadder>>
+}) {
+  const sections: { key: IracStep; title: string }[] = [
+    { key: "issue", title: "Muammo (Issue)" },
+    { key: "rule", title: "Qoida (Rule)" },
+    { key: "application", title: "Tahlil (Application)" },
+    { key: "conclusion", title: "Xulosa (Conclusion)" },
+  ]
+
+  const [editingStep, setEditingStep] = useState<IracStep | null>(null)
+  const order: IracStep[] = ["issue", "rule", "application", "conclusion"]
+  const activeIndex = order.indexOf(activeIracStep)
+
+  // Notion-style auto-resize
+  const autoResize = (el: HTMLTextAreaElement | null) => {
+    if (!el) return
+    el.style.height = "auto"
+    el.style.height = `${el.scrollHeight}px`
+  }
+
+  return (
+    <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-10 flex flex-col gap-8 h-full overflow-y-auto">
+      <header>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-4">Kazus Tahlili</h1>
+        <hr />
+      </header>
+
+      {/* Step 1: Kazus matni */}
+      <section>
+        <h3 className="text-xl font-semibold flex items-center gap-3 mb-3">
+          <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary text-sm">1</span>
+          Kazus matni
+        </h3>
+        {!isCaseLocked ? (
+          <textarea
+            value={caseText}
+            onChange={e => {
+              setCaseText(e.target.value)
+              autoResize(e.currentTarget)
+            }}
+            onInput={e => autoResize(e.currentTarget)}
+            rows={3}
+            placeholder="Kazus faktlarini batafsil kiriting..."
+            className="w-full min-h-[100px] bg-slate-50 dark:bg-slate-900/50 border-l-4 border-primary pl-4 py-3 text-lg outline-none resize-none"
+          />
+        ) : (
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsCaseLocked(false)}
+              className="text-xs text-slate-400 hover:text-primary transition-colors cursor-pointer absolute top-0 right-0"
+            >
+              Tahrirlash
+            </button>
+            <p className="text-lg text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">{caseText}</p>
+          </div>
+        )}
+        {!isCaseLocked && (
+          <div className="mt-4 flex justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                if (!caseText.trim()) {
+                  toast.error("Avval kazus matnini kiriting")
+                  return
+                }
+                setIsCaseLocked(true)
+                setActiveIracStep("issue")
+              }}
+              className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+            >
+              Tasdiqlash va Boshlash
+            </button>
+          </div>
+        )}
+      </section>
+
+      {/* IRAC Steps */}
+      {sections.map((section, idx) => {
+        const isActive = isCaseLocked && activeIracStep === section.key
+        const isDone = isCaseLocked && order.indexOf(section.key) < activeIndex
+        const isFuture = isCaseLocked && order.indexOf(section.key) > activeIndex && editingStep !== section.key
+        const isEditingDoneStep = editingStep === section.key && isDone
+        // Only show if unlocked or completed
+        if (!isCaseLocked || isFuture) {
+          return (
+            <section key={section.key} className="opacity-30 grayscale pointer-events-none select-none">
+              <h3 className="text-xl font-semibold flex items-center gap-3 mb-3">
+                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary text-sm">{idx + 2}</span>
+                {section.title}
+              </h3>
+            </section>
+          )
+        }
+        return (
+          <section key={section.key}>
+            <h3 className="text-xl font-semibold flex items-center gap-3 mb-3">
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary text-sm">{idx + 2}</span>
+              {section.title}
+            </h3>
+            {(isActive || isEditingDoneStep) ? (
+              <textarea
+                value={iracDraft[section.key]}
+                onChange={e => {
+                  setIracDraft(prev => ({ ...prev, [section.key]: e.target.value }))
+                  autoResize(e.currentTarget)
+                }}
+                onInput={e => autoResize(e.currentTarget)}
+                rows={3}
+                placeholder="Yozishni boshlang..."
+                className="w-full min-h-[100px] bg-slate-50 dark:bg-slate-900/50 border-l-4 border-primary pl-4 py-3 text-lg outline-none resize-none"
+              />
+            ) : (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingStep(section.key)
+                    setActiveIracStep(section.key)
+                  }}
+                  className="text-xs text-slate-400 hover:text-primary transition-colors cursor-pointer absolute top-0 right-0"
+                >
+                  Tahrirlash
+                </button>
+                <p className="text-lg text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">{iracDraft[section.key] || "—"}</p>
+              </div>
+            )}
+          </section>
+        )
+      })}
+    </div>
+  )
+}
+
 /* ------------------------------------------------------------------ */
 /* Couch Page                                                          */
 /* ------------------------------------------------------------------ */
@@ -534,18 +535,19 @@ export default function CouchPage() {
 
   // Context selection
   const [selectedTopic, setSelectedTopic] = useState<string>("general")
+  const [chatMode, setChatMode] = useState<ChatMode>("personal")
+  const [activeIracStep, setActiveIracStep] = useState<IracStep>("issue")
+  const [caseText, setCaseText] = useState("")
+  const [isCaseLocked, setIsCaseLocked] = useState(false)
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
+  const [hasRestoredCaseDraft, setHasRestoredCaseDraft] = useState(false)
+  const [iracDraft, setIracDraft] = useState<Record<IracStep, string>>({
+    issue: "",
+    rule: "",
+    application: "",
+    conclusion: "",
+  })
   const { groups: contextGroups, isLoading: isContextLoading } = useChatContextOptions()
-
-  // Configure Chat вЂ” draft state (not applied until saved)
-  const [isConfigOpen, setIsConfigOpen] = useState(false)
-  const [draftRole, setDraftRole] = useState<RoleMode>("default")
-  const [draftInstructions, setDraftInstructions] = useState("")
-  const [draftLength, setDraftLength] = useState<ResponseLength>("default")
-
-  // Applied config (actually sent to API)
-  const [appliedRole, setAppliedRole] = useState<RoleMode>("default")
-  const [appliedInstructions, setAppliedInstructions] = useState("")
-  const [appliedLength, setAppliedLength] = useState<ResponseLength>("default")
 
   // Stable refs so that useChat callback identity doesn't change on every render
   const activeSessionIdRef = useRef<string | null>(null)
@@ -555,9 +557,112 @@ export default function CouchPage() {
   useEffect(() => { currentUserRef.current = currentUser }, [currentUser])
 
   const [fetchError, setFetchError] = useState<string | null>(null)
+  const [hintCostSpent, setHintCostSpent] = useState(0)
+  const [isCheckingStep, setIsCheckingStep] = useState(false)
+  const [isHintLoading, setIsHintLoading] = useState(false)
+  const [hintLadders, setHintLadders] = useState<Partial<Record<IracStep, HintLadder>>>({})
   const [input, setInput] = useState("")
+  const isCaseAnalyzerMode = chatMode === "caseAnalyzer"
+  const caseDraftStorageKey = useMemo(
+    () => `allomaai:case-analyzer:${currentUser?.uid ?? "guest"}`,
+    [currentUser?.uid]
+  )
 
-  useEffect(() => { setIsClient(true) }, [])
+  const resizeTextarea = useCallback(() => {
+    if (!textareaRef.current) return
+    textareaRef.current.style.height = "auto"
+    textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, isCaseAnalyzerMode ? 140 : 200)}px`
+  }, [isCaseAnalyzerMode])
+
+  const handleInputChange = useCallback((value: string) => {
+    setInput(value)
+    requestAnimationFrame(() => {
+      resizeTextarea()
+    })
+  }, [resizeTextarea])
+
+  useEffect(() => {
+    setIsClient(true)
+
+    try {
+      const saved = localStorage.getItem(CHAT_MODE_STORAGE_KEY)
+      if (saved === "personal" || saved === "professor" || saved === "caseAnalyzer") {
+        setChatMode(saved)
+      }
+    } catch (err) {
+      console.warn("[couch] Failed to read chat mode from localStorage:", err)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isClient || typeof window === "undefined") return
+
+    try {
+      const raw = window.localStorage.getItem(caseDraftStorageKey)
+      if (!raw) {
+        setHasRestoredCaseDraft(true)
+        return
+      }
+
+      const parsed = JSON.parse(raw) as {
+        caseText?: string
+        isCaseLocked?: boolean
+        activeIracStep?: IracStep
+        iracDraft?: Partial<Record<IracStep, string>>
+        savedAt?: string
+      }
+
+      if (typeof parsed.caseText === "string") setCaseText(parsed.caseText)
+      if (typeof parsed.isCaseLocked === "boolean") setIsCaseLocked(parsed.isCaseLocked)
+      if (parsed.activeIracStep) setActiveIracStep(parsed.activeIracStep)
+      if (parsed.iracDraft) {
+        setIracDraft({
+          issue: parsed.iracDraft.issue ?? "",
+          rule: parsed.iracDraft.rule ?? "",
+          application: parsed.iracDraft.application ?? "",
+          conclusion: parsed.iracDraft.conclusion ?? "",
+        })
+      }
+      if (parsed.savedAt) setLastSavedAt(parsed.savedAt)
+    } catch (error) {
+      console.error("Failed to restore case analyzer draft", error)
+    } finally {
+      setHasRestoredCaseDraft(true)
+    }
+  }, [caseDraftStorageKey, isClient])
+
+  useEffect(() => {
+    if (!isClient) return
+    try {
+      localStorage.setItem(CHAT_MODE_STORAGE_KEY, chatMode)
+    } catch (err) {
+      console.warn("[couch] Failed to save chat mode to localStorage:", err)
+    }
+  }, [chatMode, isClient])
+
+  const saveCaseAnalyzerDraft = useCallback(async (nextDraft: {
+    caseText: string
+    isCaseLocked: boolean
+    activeIracStep: IracStep
+    iracDraft: Record<IracStep, string>
+  }) => {
+    if (typeof window === "undefined") return
+
+    const savedAt = new Date().toISOString()
+    window.localStorage.setItem(
+      caseDraftStorageKey,
+      JSON.stringify({ ...nextDraft, savedAt })
+    )
+    setLastSavedAt(savedAt)
+  }, [caseDraftStorageKey])
+
+  useAutosave(
+    hasRestoredCaseDraft && isCaseAnalyzerMode
+      ? { caseText, isCaseLocked, activeIracStep, iracDraft }
+      : null,
+    saveCaseAnalyzerDraft,
+    5000
+  )
 
   // Memoize callbacks so that useChat does not see a new options object on
   // every render, which could trigger unnecessary internal re-initializations.
@@ -593,6 +698,8 @@ export default function CouchPage() {
     onError: handleError,
   })
 
+  const isModeLocked = messages.length > 0
+
   const isLoading = status === "submitted" || status === "streaming"
 
   useEffect(() => {
@@ -611,6 +718,9 @@ export default function CouchPage() {
         hasInitializedSession.current = true
         setActiveSessionId(chats[0].id)
         setMessages(toUIMessages(chats[0].messages))
+        if (chats[0].mode === "personal" || chats[0].mode === "professor" || chats[0].mode === "caseAnalyzer") {
+          setChatMode(chats[0].mode)
+        }
       }
     })
     return () => unsubscribe()
@@ -635,11 +745,8 @@ export default function CouchPage() {
   }, [messages, isLoading])
 
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto"
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`
-    }
-  }, [input])
+    resizeTextarea()
+  }, [resizeTextarea])
 
   const handleCreateNewChat = async () => {
     if (!currentUser) {
@@ -647,7 +754,7 @@ export default function CouchPage() {
       return
     }
     try {
-      const newId = await createChatSession(currentUser.uid, "Yangi suhbat")
+      const newId = await createChatSession(currentUser.uid, "Yangi suhbat", chatMode)
       setActiveSessionId(newId)
       setMessages([])
       setTimeout(() => setInput(""), 10)
@@ -663,36 +770,101 @@ export default function CouchPage() {
     (chat: ChatSession) => {
       setActiveSessionId(chat.id)
       setMessages(toUIMessages(chat.messages))
+      if (chat.mode === "personal" || chat.mode === "professor" || chat.mode === "caseAnalyzer") {
+        setChatMode(chat.mode)
+      }
       hasInitializedSession.current = true
     },
     [setMessages]
   )
 
-  const openConfig = () => {
-    setDraftRole(appliedRole)
-    setDraftInstructions(appliedInstructions)
-    setDraftLength(appliedLength)
-    setIsConfigOpen(true)
-  }
+  const handleModeChange = useCallback(async (value: string) => {
+    const nextMode = value as ChatMode
+    if (isModeLocked) return
+    setChatMode(nextMode)
 
-  const handleSaveConfig = () => {
-    setAppliedRole(draftRole)
-    setAppliedInstructions(draftInstructions)
-    setAppliedLength(draftLength)
-    setIsConfigOpen(false)
-    toast.success("Chat sozlamalari saqlandi")
-  }
+    if (activeSessionId) {
+      try {
+        await updateChatMode(activeSessionId, nextMode)
+      } catch (err) {
+        console.error("[couch] Failed to persist mode:", err)
+      }
+    }
+  }, [activeSessionId, isModeLocked])
 
   // Memoize chatBody so the reference only changes when the actual values change.
   // This prevents accidentally passing new object references to sendMessage on
   // every render, which could trigger extra renders in consuming components.
   const chatBody = useMemo(() => ({
     topicId: selectedTopic,
-    roleMode: appliedRole,
-    systemInstructions: appliedInstructions,
-    responseLength: appliedLength,
+    mode: chatMode === "caseAnalyzer" ? "professor" : chatMode,
+    responseLength: "default",
     userId: currentUser?.uid ?? null,
-  }), [selectedTopic, appliedRole, appliedInstructions, appliedLength, currentUser?.uid])
+  }), [selectedTopic, chatMode, currentUser?.uid])
+
+  const handleEvaluateStep = useCallback(async (step: IracStep) => {
+    if (!caseText.trim() || isLoading || isCheckingStep) return false
+
+    try {
+      setIsCheckingStep(true)
+
+      const response = await fetch("/api/chat/hint-ladder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          caseText,
+          step,
+          studentDraft: iracDraft[step],
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Judge request failed: ${response.status}`)
+      }
+
+      const data = await response.json() as {
+        score: "A" | "B" | "C"
+        is_correct: boolean
+        feedback_to_student: string
+        hint_ladder: {
+          level_1_strategic: string
+          level_2_reconfigure: string
+          level_3_heuristic: string
+        }
+      }
+
+      setHintLadders((prev) => ({
+        ...prev,
+        [step]: {
+          feedback: data.feedback_to_student,
+          score: data.score,
+          isCorrect: data.is_correct,
+          levels: [
+            data.hint_ladder.level_1_strategic,
+            data.hint_ladder.level_2_reconfigure,
+            data.hint_ladder.level_3_heuristic,
+          ],
+          revealedLevel: prev[step]?.revealedLevel ?? 0,
+        },
+      }))
+
+      if (data.is_correct) {
+        toast.success("Bosqich muvaffaqiyatli tekshirildi")
+        return true
+      }
+
+      toast.warning("Javob to'liq emas", {
+        description: "Feedback ko'rsatildi. Endi xohlasangiz Hint Ladder’dan foydalanishingiz mumkin.",
+      })
+      return false
+    } catch (error) {
+      console.error("Step evaluation error:", error)
+      toast.error("Bosqichni tekshirishda xatolik yuz berdi")
+      return false
+    } finally {
+      setIsCheckingStep(false)
+    }
+  }, [caseText, iracDraft, isCheckingStep, isLoading])
 
   async function handleFormSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -703,7 +875,8 @@ export default function CouchPage() {
       if (!activeSessionId && currentUser) {
         const id = await createChatSession(
           currentUser.uid,
-          text.substring(0, 30) || "Yangi suhbat"
+          text.substring(0, 30) || "Yangi suhbat",
+          chatMode
         )
         setActiveSessionId(id)
         await sendMessage({ text }, { body: chatBody })
@@ -721,6 +894,88 @@ export default function CouchPage() {
     }
   }
 
+  const handleRequestHint = useCallback(async (step: IracStep) => {
+    if (!caseText.trim() || isLoading || isHintLoading) return
+
+    const stepLabelMap: Record<IracStep, string> = {
+      issue: "Issue",
+      rule: "Rule",
+      application: "Application",
+      conclusion: "Conclusion",
+    }
+
+    const currentDraft = iracDraft[step]?.trim() || "Hali yozilmagan"
+    const existingLadder = hintLadders[step]
+    const nextLevel = existingLadder ? existingLadder.revealedLevel + 1 : 1
+
+    if (nextLevel > 3) {
+      toast.message("Bu bosqich uchun barcha ishoralar allaqachon ochilgan")
+      return
+    }
+
+    try {
+      setIsHintLoading(true)
+
+      const ladder = existingLadder
+      if (!ladder || ladder.isCorrect) {
+        toast.message("Avval Tekshirish orqali bosqichni baholang")
+        return
+      }
+
+      const updatedLadder: HintLadder = {
+        ...ladder,
+        revealedLevel: nextLevel as 1 | 2 | 3,
+      }
+
+      setHintLadders((prev) => ({
+        ...prev,
+        [step]: updatedLadder,
+      }))
+
+      const currentHint = updatedLadder.levels[nextLevel - 1]
+      const xpCost = HINT_COSTS[nextLevel - 1]
+      const assistantText = [
+        `**${stepLabelMap[step]} bosqichi uchun ishora ${nextLevel}/3**`,
+        "",
+        updatedLadder.feedback,
+        "",
+        `**Ishora:** ${currentHint}`,
+        "",
+        `**XP narxi:** -${xpCost}`,
+      ].join("\n")
+
+      const assistantMessage: UIMessage = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        parts: [{ type: "text", text: assistantText }],
+      }
+
+      const nextMessages = [...messages, assistantMessage]
+
+      let targetChatId = activeSessionId
+      if (!targetChatId && currentUser) {
+        targetChatId = await createChatSession(currentUser.uid, `${stepLabelMap[step]} uchun ishora`, chatMode)
+        setActiveSessionId(targetChatId)
+      }
+
+      setMessages(nextMessages)
+
+      if (targetChatId) {
+        await updateChatMessages(targetChatId, nextMessages as unknown as any[])
+      }
+
+      setHintCostSpent((prev) => prev + xpCost)
+      toast.warning("Ishora ochildi", {
+        description: `Yakuniy balldan ${xpCost} XP chegirildi.`,
+      })
+    } catch (error) {
+      console.error("Hint request error:", error)
+      toast.error("Ishora yuborishda xatolik yuz berdi")
+    } finally {
+      setIsHintLoading(false)
+    }
+  }, [activeSessionId, caseText, chatMode, currentUser, hintLadders, iracDraft, isHintLoading, isLoading, messages, setMessages])
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
@@ -729,11 +984,6 @@ export default function CouchPage() {
       }
     }
   }
-
-  const isConfigured =
-    appliedRole !== "default" ||
-    appliedInstructions.trim() !== "" ||
-    appliedLength !== "default"
 
   if (!isClient) {
     return (
@@ -750,6 +1000,7 @@ export default function CouchPage() {
           PERSISTENT HISTORY SIDEBAR (desktop)
           Hidden on mobile вЂ” full screen chat takes over
       в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */}
+      {!isCaseAnalyzerMode && (
       <aside className="hidden md:flex shrink-0 w-60 lg:w-64 flex-col border-r border-slate-200 dark:border-[#2a2c2e] bg-slate-50/60 dark:bg-[#1a1b1c]">
         {/* Sidebar header */}
         <div className="px-4 pt-4 pb-3">
@@ -820,6 +1071,7 @@ export default function CouchPage() {
           )}
         </div>
       </aside>
+      )}
 
       {/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
           MAIN CHAT AREA
@@ -832,7 +1084,10 @@ export default function CouchPage() {
             {/* Mobile-only: new chat button */}
             <button
               onClick={handleCreateNewChat}
-              className="md:hidden p-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-[#2a2f3a] transition-colors"
+              className={cn(
+                "p-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-[#2a2f3a] transition-colors",
+                !isCaseAnalyzerMode && "md:hidden"
+              )}
             >
               <PlusCircle className="w-4 h-4" />
             </button>
@@ -841,204 +1096,362 @@ export default function CouchPage() {
             </span>
           </div>
 
-          <div className="flex items-center gap-1">
-            <button
-              onClick={openConfig}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] transition-colors",
-                isConfigured
-                  ? "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60"
-                  : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#2a2f3a]"
-              )}
-            >
-              <Settings2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Configure Chat</span>
-            </button>
-          </div>
+          <div className="w-8" />
         </header>
 
-        {/* в”Ђв”Ђ Applied Config Banner в”Ђв”Ђ */}
-        <AnimatePresence>
-          {isConfigured && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="shrink-0 overflow-hidden"
-            >
-              <div className="flex items-center gap-2 px-5 py-1.5 bg-blue-50 dark:bg-blue-950/20 border-b border-blue-100 dark:border-blue-900/30">
-                <span className="text-xs text-blue-600 dark:text-blue-400">
-                  {appliedRole === "learning" && "рџ“љ Learning Guide mode"}
-                  {appliedRole === "custom" && "вњЏпёЏ Custom instructions active"}
-                  {appliedRole === "default" && appliedLength !== "default" && "вљЎ"}
-                  {appliedLength !== "default"
-                    ? `${appliedRole !== "default" ? " В· " : ""}${appliedLength === "longer" ? "Uzunroq" : "Qisqaroq"} javoblar`
-                    : ""}
-                </span>
-                <button
-                  onClick={openConfig}
-                  className="ml-auto text-xs text-blue-500 hover:text-blue-700 underline"
-                >
-                  Edit
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {chatMode === "caseAnalyzer" ? (
+          <div className="grid h-[calc(100vh-100px)] grid-cols-1 gap-6 px-4 py-4 sm:px-6 lg:grid-cols-12">
+            <aside className="min-h-0 lg:sticky lg:top-6 lg:col-span-5 lg:self-start">
+              <div className="flex h-[calc(100vh-148px)] min-h-0 flex-col overflow-hidden rounded-3xl bg-white dark:bg-slate-950">
+                <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+                  <div className="mx-auto max-w-[700px] px-4 py-3">
+                  {messages.length === 0 ? (
+                    <WelcomeState
+                      onSuggestionClick={(text) => { setInput(text); textareaRef.current?.focus() }}
+                      chatMode={chatMode}
+                    />
+                  ) : (
+                    <div className="pb-4">
+                      <div className="flex items-center justify-center mb-8">
+                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-[#2a2f3a]">
+                          <Clock className="w-3 h-3 text-slate-400" />
+                          <span className="text-xs text-slate-400 dark:text-slate-500">Bugun</span>
+                        </div>
+                      </div>
 
-        {/* в”Ђв”Ђ Messages Area в”Ђв”Ђ */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto">
-          <div className="max-w-[700px] mx-auto px-4 sm:px-8 py-6">
-            {messages.length === 0 ? (
-              <WelcomeState
-                onSuggestionClick={(text) => { setInput(text); textareaRef.current?.focus() }}
-                roleMode={appliedRole}
-              />
-            ) : (
-              <div className="pb-6">
-                <div className="flex items-center justify-center mb-8">
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-[#2a2f3a]">
-                    <Clock className="w-3 h-3 text-slate-400" />
-                    <span className="text-xs text-slate-400 dark:text-slate-500">Bugun</span>
+                      {messages.map((msg) => (
+                        <NotebookMessage key={msg.id} message={msg} />
+                      ))}
+
+                      {isLoading && messages[messages.length - 1]?.role === "user" && <TypingIndicator />}
+
+                      {error && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="flex items-start gap-3 p-4 mb-4 rounded-xl bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/40"
+                        >
+                          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm">{error.message || "Xatolik yuz berdi"}</p>
+                            <button onClick={() => regenerate()} className="text-xs underline mt-1 opacity-80">
+                              Qayta urinish
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
+                  )}
                   </div>
                 </div>
 
-                {messages.map((msg) => (
-                  <NotebookMessage key={msg.id} message={msg} />
-                ))}
-
-                {isLoading && messages[messages.length - 1]?.role === "user" && <TypingIndicator />}
-
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex items-start gap-3 p-4 mb-4 rounded-xl bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/40"
-                  >
-                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm">{error.message || "Xatolik yuz berdi"}</p>
-                      <button onClick={() => regenerate()} className="text-xs underline mt-1 opacity-80">
-                        Qayta urinish
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-                <div className="h-6" />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* в”Ђв”Ђ Input Area в”Ђв”Ђ */}
-        <div className="shrink-0 px-4 sm:px-6 pb-5 sm:pb-6 pt-2 bg-white dark:bg-[#131314]">
-          <div className="max-w-[700px] mx-auto">
-            <form ref={formRef} onSubmit={handleFormSubmit}>
-              <div
-                className={cn(
-                  "rounded-2xl border transition-all duration-200",
-                  "bg-white dark:bg-[#1e1f20]",
-                  "border-slate-200 dark:border-[#3c4043]",
-                  "shadow-[0_2px_12px_rgba(0,0,0,0.07)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)]",
-                  "focus-within:shadow-[0_4px_20px_rgba(0,0,0,0.11)] dark:focus-within:shadow-[0_4px_20px_rgba(0,0,0,0.4)]",
-                  "focus-within:border-slate-300 dark:focus-within:border-[#5c6168]"
-                )}
-              >
-                <textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={isLoading ? "Javob kutilmoqda..." : "Savolingizni bu yerga yozing..."}
-                  disabled={isLoading}
-                  rows={1}
-                  className={cn(
-                    "w-full px-4 pt-3.5 pb-2 resize-none bg-transparent",
-                    "text-[15px] text-slate-800 dark:text-slate-200",
-                    "placeholder:text-slate-400 dark:placeholder:text-slate-600",
-                    "focus:outline-none disabled:opacity-60",
-                    "min-h-[52px] max-h-[200px]"
-                  )}
-                />
-
-                <div className="flex items-center justify-between px-3 pb-3">
-                  <Select
-                    value={selectedTopic}
-                    onValueChange={setSelectedTopic}
-                    disabled={isContextLoading || isLoading}
-                  >
-                    <SelectTrigger
+                <div className="shrink-0 border-t border-slate-200 px-4 pb-4 pt-3 dark:border-slate-800">
+                  <form ref={formRef} onSubmit={handleFormSubmit}>
+                    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 focus-within:border-slate-300 dark:border-slate-800 dark:bg-slate-950">
+                    <textarea
+                      ref={textareaRef}
+                      value={input}
+                      onChange={(e) => handleInputChange(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder={isLoading ? "Javob kutilmoqda..." : "Sokratik savol yoki javobingizni yozing..."}
+                      disabled={isLoading}
+                      rows={1}
                       className={cn(
-                        "h-8 gap-1.5 px-3 rounded-full w-auto min-w-[130px]",
-                        "border-slate-200 dark:border-[#3c4043]",
-                        "bg-slate-50 dark:bg-[#2a2f3a]",
-                        "text-xs font-medium text-slate-600 dark:text-slate-400",
-                        "hover:bg-slate-100 dark:hover:bg-[#35373b]",
-                        "focus:ring-0 shadow-none",
-                        "[&>svg]:w-3 [&>svg]:h-3 [&>svg]:opacity-50"
+                        "min-h-[40px] max-h-[140px] w-full resize-none bg-transparent px-3 pt-2.5 pb-1.5",
+                        "text-[14px] text-slate-800 placeholder:text-slate-400",
+                        "focus:outline-none disabled:opacity-60"
                       )}
-                    >
-                      <BookOpen className="w-3 h-3 text-blue-500 shrink-0" />
-                      <SelectValue placeholder="Kontekst" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[280px] rounded-xl border-slate-200 dark:border-[#3c4043]">
-                      <SelectItem value="general" className="text-sm">
-                        Umumiy suhbat
-                      </SelectItem>
-                      {contextGroups.map((group) => (
-                        <SelectGroup key={group.id}>
-                          <SelectLabel className="text-blue-500 font-semibold text-xs">
-                            {group.label}
-                          </SelectLabel>
-                          {group.topics.map((topic) => (
-                            <SelectItem key={topic.id} value={topic.id} className="pl-6 text-sm">
-                              {topic.title}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    />
 
-                  <button
-                    type="submit"
-                    disabled={!input.trim() || isLoading}
-                    className={cn(
-                      "w-9 h-9 rounded-full flex items-center justify-center transition-all",
-                      input.trim() && !isLoading
-                        ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
-                        : "text-slate-300 dark:text-slate-700 cursor-not-allowed"
-                    )}
-                  >
-                    {isLoading ? (
-                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin opacity-50" />
-                    ) : (
-                      <Send className="w-4 h-4" />
-                    )}
-                  </button>
+                    <div className="flex items-center justify-between px-2 pb-2">
+                      <Select
+                        value={selectedTopic}
+                        onValueChange={setSelectedTopic}
+                        disabled={isContextLoading || isLoading}
+                      >
+                        <SelectTrigger
+                          className={cn(
+                            "h-8 gap-1.5 px-3 rounded-full w-auto min-w-[130px]",
+                            "border-slate-200 bg-slate-50",
+                            "text-xs font-medium text-slate-600 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300",
+                            "focus:ring-0 shadow-none",
+                            "[&>svg]:w-3 [&>svg]:h-3 [&>svg]:opacity-50"
+                          )}
+                        >
+                          <BookOpen className="w-3 h-3 text-blue-500 shrink-0" />
+                          <SelectValue placeholder="Kontekst" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[280px] rounded-xl border-slate-200 dark:border-slate-800">
+                          <SelectItem value="general" className="text-sm">
+                            Umumiy suhbat
+                          </SelectItem>
+                          {contextGroups.map((group) => (
+                            <SelectGroup key={group.id}>
+                              <SelectLabel className="text-blue-500 font-semibold text-xs">
+                                {group.label}
+                              </SelectLabel>
+                              {group.topics.map((topic) => (
+                                <SelectItem key={topic.id} value={topic.id} className="pl-6 text-sm">
+                                  {topic.title}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <div className="flex items-center gap-2">
+                        {isModeLocked ? (
+                          <div className="flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-500 dark:bg-slate-900 dark:text-slate-300">
+                            <Lock className="w-3 h-3" />
+                            {getModeLabel(chatMode)}
+                          </div>
+                        ) : (
+                          <Select
+                            value={chatMode}
+                            onValueChange={handleModeChange}
+                            disabled={isLoading}
+                          >
+                            <SelectTrigger
+                              className={cn(
+                                "h-8 gap-1.5 px-3 rounded-full w-auto min-w-[170px]",
+                                "border-slate-200 bg-slate-50",
+                                "text-xs font-medium text-slate-600 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300",
+                                "focus:ring-0 shadow-none",
+                                "[&>svg]:w-3 [&>svg]:h-3 [&>svg]:opacity-50"
+                              )}
+                            >
+                              <SelectValue placeholder="Chat rejimi" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-slate-200 dark:border-slate-800">
+                              <SelectItem value="personal" className="text-sm">Shaxsiy yordamchi</SelectItem>
+                              <SelectItem value="professor" className="text-sm">Professor</SelectItem>
+                              <SelectItem value="caseAnalyzer" className="text-sm">Kazus Tahlilchi</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+
+                        <button
+                          type="submit"
+                          disabled={!input.trim() || isLoading}
+                          className={cn(
+                            "w-9 h-9 rounded-full flex items-center justify-center transition-all",
+                            input.trim() && !isLoading
+                              ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+                              : "text-slate-300 dark:text-slate-700 cursor-not-allowed"
+                          )}
+                        >
+                          {isLoading ? (
+                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin opacity-50" />
+                          ) : (
+                            <Send className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  </form>
                 </div>
               </div>
-            </form>
+            </aside>
 
-            <p className="text-center text-[11px] text-slate-400 dark:text-slate-600 mt-2.5">
-              AI ba&apos;zan xato qilishi mumkin. Muhim qarorlar qabul qilishda ma&apos;lumotni tekshiring.
-            </p>
+            <main className="min-h-0 lg:col-span-7">
+              <CaseWorkspace
+                activeIracStep={activeIracStep}
+                setActiveIracStep={setActiveIracStep}
+                iracDraft={iracDraft}
+                setIracDraft={setIracDraft}
+                caseText={caseText}
+                setCaseText={setCaseText}
+                isCaseLocked={isCaseLocked}
+                setIsCaseLocked={setIsCaseLocked}
+                onEvaluateStep={handleEvaluateStep}
+                onRequestHint={handleRequestHint}
+                isCheckingStep={isCheckingStep}
+                isHintLoading={isHintLoading}
+                hintLadders={hintLadders}
+              />
+            </main>
           </div>
-        </div>
+        ) : (
+          <>
+            {/* в”Ђв”Ђ Messages Area в”Ђв”Ђ */}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto">
+              <div className="max-w-[700px] mx-auto px-4 sm:px-8 py-6">
+                {messages.length === 0 ? (
+                  <WelcomeState
+                    onSuggestionClick={(text) => { setInput(text); textareaRef.current?.focus() }}
+                    chatMode={chatMode}
+                  />
+                ) : (
+                  <div className="pb-6">
+                    <div className="flex items-center justify-center mb-8">
+                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-[#2a2f3a]">
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        <span className="text-xs text-slate-400 dark:text-slate-500">Bugun</span>
+                      </div>
+                    </div>
+
+                    {messages.map((msg) => (
+                      <NotebookMessage key={msg.id} message={msg} />
+                    ))}
+
+                    {isLoading && messages[messages.length - 1]?.role === "user" && <TypingIndicator />}
+
+                    {error && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex items-start gap-3 p-4 mb-4 rounded-xl bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/40"
+                      >
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm">{error.message || "Xatolik yuz berdi"}</p>
+                          <button onClick={() => regenerate()} className="text-xs underline mt-1 opacity-80">
+                            Qayta urinish
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                    <div className="h-6" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* в”Ђв”Ђ Input Area в”Ђв”Ђ */}
+            <div className="shrink-0 px-4 sm:px-6 pb-5 sm:pb-6 pt-2 bg-white dark:bg-[#131314]">
+              <div className="max-w-[700px] mx-auto">
+                <form ref={formRef} onSubmit={handleFormSubmit}>
+                  <div
+                    className={cn(
+                      "rounded-2xl border transition-all duration-200",
+                      "bg-white dark:bg-[#1e1f20]",
+                      "border-slate-200 dark:border-[#3c4043]",
+                      "shadow-[0_2px_12px_rgba(0,0,0,0.07)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)]",
+                      "focus-within:shadow-[0_4px_20px_rgba(0,0,0,0.11)] dark:focus-within:shadow-[0_4px_20px_rgba(0,0,0,0.4)]",
+                      "focus-within:border-slate-300 dark:focus-within:border-[#5c6168]"
+                    )}
+                  >
+                    <textarea
+                      ref={textareaRef}
+                      value={input}
+                      onChange={(e) => handleInputChange(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder={isLoading ? "Javob kutilmoqda..." : "Savolingizni bu yerga yozing..."}
+                      disabled={isLoading}
+                      rows={1}
+                      className={cn(
+                        "w-full px-4 pt-3.5 pb-2 resize-none bg-transparent",
+                        "text-[15px] text-slate-800 dark:text-slate-200",
+                        "placeholder:text-slate-400 dark:placeholder:text-slate-600",
+                        "focus:outline-none disabled:opacity-60",
+                        "min-h-[52px] max-h-[200px]"
+                      )}
+                    />
+
+                    <div className="flex items-center justify-between px-3 pb-3">
+                      <Select
+                        value={selectedTopic}
+                        onValueChange={setSelectedTopic}
+                        disabled={isContextLoading || isLoading}
+                      >
+                        <SelectTrigger
+                          className={cn(
+                            "h-8 gap-1.5 px-3 rounded-full w-auto min-w-[130px]",
+                            "border-slate-200 dark:border-[#3c4043]",
+                            "bg-slate-50 dark:bg-[#2a2f3a]",
+                            "text-xs font-medium text-slate-600 dark:text-slate-400",
+                            "hover:bg-slate-100 dark:hover:bg-[#35373b]",
+                            "focus:ring-0 shadow-none",
+                            "[&>svg]:w-3 [&>svg]:h-3 [&>svg]:opacity-50"
+                          )}
+                        >
+                          <BookOpen className="w-3 h-3 text-blue-500 shrink-0" />
+                          <SelectValue placeholder="Kontekst" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[280px] rounded-xl border-slate-200 dark:border-[#3c4043]">
+                          <SelectItem value="general" className="text-sm">
+                            Umumiy suhbat
+                          </SelectItem>
+                          {contextGroups.map((group) => (
+                            <SelectGroup key={group.id}>
+                              <SelectLabel className="text-blue-500 font-semibold text-xs">
+                                {group.label}
+                              </SelectLabel>
+                              {group.topics.map((topic) => (
+                                <SelectItem key={topic.id} value={topic.id} className="pl-6 text-sm">
+                                  {topic.title}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <div className="flex items-center gap-2">
+                        {isModeLocked ? (
+                          <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">
+                            <Lock className="w-3 h-3" />
+                            {getModeLabel(chatMode)}
+                          </div>
+                        ) : (
+                          <Select
+                            value={chatMode}
+                            onValueChange={handleModeChange}
+                            disabled={isLoading}
+                          >
+                            <SelectTrigger
+                              className={cn(
+                                "h-8 gap-1.5 px-3 rounded-full w-auto min-w-[170px]",
+                                "border-slate-200 dark:border-[#3c4043]",
+                                "bg-slate-50 dark:bg-[#2a2f3a]",
+                                "text-xs font-medium text-slate-600 dark:text-slate-400",
+                                "hover:bg-slate-100 dark:hover:bg-[#35373b]",
+                                "focus:ring-0 shadow-none",
+                                "[&>svg]:w-3 [&>svg]:h-3 [&>svg]:opacity-50"
+                              )}
+                            >
+                              <SelectValue placeholder="Chat rejimi" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-slate-200 dark:border-[#3c4043]">
+                              <SelectItem value="personal" className="text-sm">Shaxsiy yordamchi</SelectItem>
+                              <SelectItem value="professor" className="text-sm">Professor</SelectItem>
+                              <SelectItem value="caseAnalyzer" className="text-sm">Kazus Tahlilchi</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+
+                        <button
+                          type="submit"
+                          disabled={!input.trim() || isLoading}
+                          className={cn(
+                            "w-9 h-9 rounded-full flex items-center justify-center transition-all",
+                            input.trim() && !isLoading
+                              ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+                              : "text-slate-300 dark:text-slate-700 cursor-not-allowed"
+                          )}
+                        >
+                          {isLoading ? (
+                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin opacity-50" />
+                          ) : (
+                            <Send className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+
+                <p className="text-center text-[11px] text-slate-400 dark:text-slate-600 mt-2.5">
+                  AI ba&apos;zan xato qilishi mumkin. Muhim qarorlar qabul qilishda ma&apos;lumotni tekshiring.
+                </p>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* в”Ђв”Ђ Configure Chat Modal в”Ђв”Ђ */}
-      <ConfigureChatModal
-        open={isConfigOpen}
-        onClose={() => setIsConfigOpen(false)}
-        roleMode={draftRole}
-        onRoleChange={setDraftRole}
-        customInstructions={draftInstructions}
-        onInstructionsChange={setDraftInstructions}
-        responseLength={draftLength}
-        onLengthChange={setDraftLength}
-        onSave={handleSaveConfig}
-      />
     </div>
   )
 }

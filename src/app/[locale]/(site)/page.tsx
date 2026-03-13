@@ -6,12 +6,12 @@ import PricingSection from '@/components/sections/pricing';
 
 export default async function Home() {
   return (
-    <>
+    <main>
       <HeroSection />
       <CoreFeatures />
       <BenefitsGrid />
       <PricingSection />
       <FaqAccordion />
-    </>
+    </main>
   );
 }

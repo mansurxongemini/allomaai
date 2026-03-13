@@ -42,7 +42,6 @@ export function GenerateDummyDataButton() {
             await setDoc(userRef, {
                 stats: randomStats,
                 streak: randomStreak,
-                xp: Math.floor(Math.random() * 5000 + 1000),
                 totalPoints: Math.floor(Math.random() * 6000 + 1000),
 
                 // Root fallbacks to make sure the user's requested schema works too
@@ -65,7 +64,7 @@ export function GenerateDummyDataButton() {
 
                 await addDoc(activitiesRef, {
                     userId: currentUser.uid,
-                    type: "xp_gain",
+                    type: "points_gain",
                     amount: Math.floor(Math.random() * 50 + 10),
                     reason: "Test ma'lumot",
                     timestamp: pastDate,

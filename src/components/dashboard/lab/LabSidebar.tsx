@@ -47,7 +47,7 @@ export function LabSidebar() {
   }, [currentUser, loading])
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-slate-200">
+    <div className="flex h-full flex-col bg-white border-r border-slate-200">
       {/* Sidebar Header */}
       <div className="px-4 py-5 border-b border-slate-200">
         <div className="flex items-center gap-2.5">

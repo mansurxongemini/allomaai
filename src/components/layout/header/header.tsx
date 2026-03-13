@@ -19,7 +19,7 @@ export default function Header() {
   }, [pathname]);
 
   return (
-    <header className="bg-white dark:bg-dark-primary border-b dark:border-gray-800 border-gray-100 sticky top-0 z-50 py-2 lg:py-4">
+    <header className="sticky top-0 z-50 border-b border-border/80 bg-surface/90 py-2 backdrop-blur-md lg:py-4">
       <div className="px-4 sm:px-6 lg:px-7">
         <div className="grid grid-cols-2 items-center lg:grid-cols-[1fr_auto_1fr]">
           <div className="flex items-center">
@@ -60,7 +60,7 @@ export default function Header() {
                 setMobileMenuOpen(!mobileMenuOpen);
               }}
               type="button"
-              className="order-last shrink-0 inline-flex items-center justify-center p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 lg:hidden"
+              className="order-last shrink-0 inline-flex items-center justify-center rounded-[var(--radius-sm)] p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100 lg:hidden"
             >
               {mobileMenuOpen ? <CloseIcon /> : <MenuIcon />}
             </button>

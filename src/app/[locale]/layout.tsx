@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import { ThemeProvider } from 'next-themes';
-import { Onest } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import '../globals.css';
 import { ToasterProvider } from './providers/toaster';
 import { AuthProvider } from '@/context/AuthContext';
 
-const onest = Onest({
+const inter = Inter({
   subsets: ['latin'],
 });
 
@@ -44,7 +44,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning data-scroll-behavior="smooth">
       <body
-        className={`bg-gray-50 dark:bg-dark-secondary min-h-screen flex flex-col ${onest.className}`}
+        className={`min-h-screen flex flex-col bg-[var(--bg)] text-[var(--foreground)] ${inter.className}`}
         suppressHydrationWarning
       >
         <NextIntlClientProvider messages={messages}>

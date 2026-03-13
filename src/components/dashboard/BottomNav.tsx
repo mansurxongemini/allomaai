@@ -20,10 +20,10 @@ export function BottomNav() {
     <nav
       className={cn(
         "flex md:hidden fixed bottom-0 left-0 right-0 z-50",
-        "bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl",
-        "border-t border-slate-200/80 dark:border-slate-700/50",
+        "bg-surface/95 backdrop-blur-md",
+        "border-t border-border",
         "pb-[env(safe-area-inset-bottom)]",
-        "shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)]"
+        "shadow-[0_-4px_20px_-10px_rgba(15,23,42,0.12)]"
       )}
       role="navigation"
       aria-label="Asosiy navigatsiya"
@@ -40,33 +40,21 @@ export function BottomNav() {
               key={item.label}
               href={item.href}
               className={cn(
-                "relative flex flex-col items-center gap-1 min-w-0 flex-1 py-2 px-1 rounded-xl transition-all duration-200",
+                "relative flex min-w-0 flex-1 flex-col items-center gap-1 rounded-[var(--radius-md)] px-1 py-2 transition-colors duration-200",
                 "min-h-[56px] justify-center",
                 isActive
-                  ? "text-violet-600 dark:text-violet-400"
-                  : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300",
-                item.highlight && !isActive && "text-violet-500"
+                  ? "bg-primary/10 text-primary"
+                  : "text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200",
+                item.highlight && !isActive && "text-primary/80"
               )}
               aria-current={isActive ? "page" : undefined}
             >
-              {/* Active indicator */}
-              {isActive && (
-                <motion.div
-                  layoutId="bottomNavIndicator"
-                  className={cn(
-                    "absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full",
-                    "bg-gradient-to-r from-violet-500 to-violet-600"
-                  )}
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                />
-              )}
-              
               <div className={cn(
-                "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200",
+                "flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] transition-colors duration-200",
                 isActive 
-                  ? "bg-gradient-to-br from-violet-500 to-violet-600 shadow-lg shadow-violet-500/25"
+                  ? "bg-primary text-white"
                   : item.highlight 
-                    ? "bg-violet-50 dark:bg-violet-950/30"
+                    ? "bg-primary/10"
                     : "bg-transparent",
                 isActive && "text-white"
               )}>

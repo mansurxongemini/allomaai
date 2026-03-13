@@ -2,39 +2,34 @@ import Image from 'next/image';
 import { Link } from '@/i18n/routing';
 import { Subheading } from './subheading';
 import { useTranslations } from 'next-intl';
+import { Button } from '@/components/ui/button';
 
 export default function HeroSection() {
   const t = useTranslations('Hero');
 
   return (
-    <section className="pt-16 relative overflow-hidden dark:bg-[#171F2E]">
-      <div className="max-w-[120rem] mx-auto relative">
-        <div className="wrapper">
+    <section className="relative overflow-hidden py-20 md:py-32">
+      <div className="max-w-7xl mx-auto relative px-4 sm:px-6 lg:px-8">
+        <div>
           <div className="max-w-[800px] mx-auto">
-            <div className="text-center pb-16">
+            <div className="text-center pb-16 md:pb-20">
               <Subheading text={t('badge')} />
 
-              <h1 className="text-gray-700 mx-auto font-bold mb-4 text-4xl sm:text-[50px] dark:text-white/90 sm:leading-[64px] max-w-[700px]">
+              <h1 className="mx-auto mb-6 max-w-[700px] text-5xl md:text-6xl font-bold leading-tight text-foreground">
                 {t('headline')}
               </h1>
-              <p className="max-w-[537px] text-center mx-auto dark:text-gray-400 text-gray-500 text-base">
+              <p className="mx-auto max-w-[620px] text-center text-lg md:text-xl leading-relaxed text-muted-foreground">
                 {t('subheadline')}
               </p>
 
-              <div className="mt-9 flex sm:flex-row flex-col gap-3 relative z-30 items-center justify-center">
-                <Link
-                  href="/signup"
-                  className="bg-primary-500 transition h-12 inline-flex items-center justify-center hover:bg-primary-600 px-6 py-3 rounded-full text-white text-sm"
-                >
-                  {t('cta_free')}
-                </Link>
+              <div className="relative z-30 mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+                <Button asChild size="lg" className="h-12 rounded-[var(--radius-md)] bg-primary px-7 text-sm font-semibold text-white hover:bg-primary-hover">
+                  <Link href="/signup">{t('cta_free')}</Link>
+                </Button>
 
-                <Link
-                  href="/signin"
-                  className="border border-gray-200 dark:border-gray-700 transition h-12 inline-flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/5 px-6 py-3 rounded-full text-gray-700 dark:text-gray-300 text-sm"
-                >
-                  {t('cta_login')}
-                </Link>
+                <Button asChild variant="outline" size="lg" className="h-12 rounded-[var(--radius-md)] border-border bg-surface px-7 text-sm font-semibold text-foreground hover:bg-accent/10">
+                  <Link href="/signin">{t('cta_login')}</Link>
+                </Button>
               </div>
             </div>
           </div>
@@ -42,7 +37,7 @@ export default function HeroSection() {
             <div className="p-3 sm:p-[18px] relative z-30 rounded-[32px] border border-white/30 dark:border-white/10 bg-white/20">
               <Image
                 src="/images/hero/hero-img.jpg"
-                alt=""
+                alt="Alloma AI platformasining asosiy boshqaruv paneli va o'quv jarayoni ko'rinishi"
                 className="w-full rounded-2xl block dark:hidden"
                 width={966}
                 height={552}
@@ -50,7 +45,7 @@ export default function HeroSection() {
               />
               <Image
                 src="/images/hero/hero-img-dark.png"
-                alt=""
+                alt="Alloma AI platformasining tungi rejimdagi boshqaruv paneli ko'rinishi"
                 className="w-full rounded-2xl hidden dark:block"
                 width={966}
                 height={552}
@@ -126,6 +121,7 @@ export default function HeroSection() {
             className="absolute top-14 left-16 floating-1"
             style={{ width: 'auto', height: 'auto' }}
             alt=""
+            aria-hidden="true"
             width={170}
             height={44}
           />
@@ -134,6 +130,7 @@ export default function HeroSection() {
             className="absolute left-[145px] top-[298px] floating-2 max-[1240px]:left-[80px]"
             style={{ width: 'auto', height: 'auto' }}
             alt=""
+            aria-hidden="true"
             width={181}
             height={44}
           />
@@ -142,6 +139,7 @@ export default function HeroSection() {
             className="absolute right-16 top-[108px] floating-3"
             style={{ width: 'auto', height: 'auto' }}
             alt=""
+            aria-hidden="true"
             width={176}
             height={44}
           />
@@ -150,6 +148,7 @@ export default function HeroSection() {
             className="absolute top-[316px] right-[200px] floating-4 max-[1240px]:right-[80px] max-[1350px]:right-[150px] max-[1500px]:right-[200px]"
             style={{ width: 'auto', height: 'auto' }}
             alt=""
+            aria-hidden="true"
             width={179}
             height={44}
           />

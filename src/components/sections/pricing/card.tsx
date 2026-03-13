@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { PropsWithChildren } from 'react';
+import { Button } from '@/components/ui/button';
 
 type Props = {
   plan: TBILLING_PLAN;
@@ -49,9 +50,10 @@ export function PricingCard({ plan, billingPeriod }: Props) {
           {plan.name.includes('Enterprise') ? (
             <ContactSalesLink>{plan.cta}</ContactSalesLink>
           ) : (
-            <button
+            <Button
+              type="button"
               className={cn(
-                'block w-full px-8 py-3.5 mt-7 text-sm font-medium text-center rounded-full transition',
+                'mt-7 h-12 w-full rounded-[var(--radius-md)] px-8 text-sm font-medium transition',
                 {
                   'dark:bg-dark-primary dark:text-white/90 dark:hover:bg-gray-800 dark:border-gray-800 text-gray-800 bg-white border border-gray-200 hover:bg-gray-50':
                     plan.name.includes('Free'),
@@ -62,7 +64,7 @@ export function PricingCard({ plan, billingPeriod }: Props) {
               )}
             >
               {plan.cta}
-            </button>
+            </Button>
           )}
         </div>
         <div className="px-8 pb-7">
@@ -91,11 +93,8 @@ export function PricingCard({ plan, billingPeriod }: Props) {
 
 function ContactSalesLink({ children }: PropsWithChildren) {
   return (
-    <Link
-      href="/contact"
-      className="block w-full px-8 py-3.5 mt-7 text-sm font-medium text-center rounded-full transition dark:hover:bg-primary-500 dark:bg-white/[0.03] hover:bg-gray-900 text-white bg-gray-700"
-    >
-      {children}
-    </Link>
+    <Button asChild className="mt-7 h-12 w-full rounded-[var(--radius-md)] px-8 text-sm font-medium transition dark:hover:bg-primary-500 dark:bg-white/[0.03] hover:bg-gray-900 text-white bg-gray-700">
+      <Link href="/contact">{children}</Link>
+    </Button>
   );
 }

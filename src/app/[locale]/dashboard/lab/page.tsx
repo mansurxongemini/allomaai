@@ -46,13 +46,13 @@ export default function LabPage() {
   }, [])
 
   return (
-    <div className="p-6 md:p-8 lg:p-10 max-w-6xl mx-auto">
+    <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8 lg:py-10">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-800 mb-2">
+        <h1 className="mb-2 text-3xl font-bold text-foreground">
           Laboratoriya markaziga xush kelibsiz
         </h1>
-        <p className="text-slate-600 leading-relaxed">
+        <p className="leading-relaxed text-muted-foreground">
           O'quv metodlari, fanlar bo'yicha chuqur tahlil va hamjamiyat maqolalari
         </p>
       </div>
@@ -60,7 +60,7 @@ export default function LabPage() {
       {/* Main Sections Grid */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Fanlar Card */}
-        <Card className="border-slate-200 hover:border-teal-300 hover:shadow-lg transition-all">
+        <Card className="rounded-[var(--radius-lg)] border-border bg-surface shadow-sm transition-shadow duration-200 hover:shadow-md">
           <CardContent className="p-6">
             <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-teal-50 border border-teal-200 mb-4">
               <BookOpen className="h-6 w-6 text-teal-700" />
@@ -70,7 +70,7 @@ export default function LabPage() {
               Huquqiy fanlar bo'yicha o'quv materiallari, testlar va amaliy mashqlar
             </p>
             <Link href="/dashboard/lab/subjects/jinoyat-huquqi">
-              <Button variant="outline" className="w-full group">
+              <Button variant="outline" className="w-full rounded-[var(--radius-md)] group">
                 Boshlash
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Button>
@@ -79,7 +79,7 @@ export default function LabPage() {
         </Card>
 
         {/* Metodlar Card */}
-        <Card className="border-slate-200 hover:border-amber-300 hover:shadow-lg transition-all">
+        <Card className="rounded-[var(--radius-lg)] border-border bg-surface shadow-sm transition-shadow duration-200 hover:shadow-md">
           <CardContent className="p-6">
             <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-amber-50 border border-amber-200 mb-4">
               <Lightbulb className="h-6 w-6 text-amber-700" />
@@ -89,7 +89,7 @@ export default function LabPage() {
               Justin Sung's o'quv metodlari: kodlash, bo'laklash, takroriy esga tushirish
             </p>
             <Link href="/dashboard/lab/methods/encoding">
-              <Button variant="outline" className="w-full group">
+              <Button variant="outline" className="w-full rounded-[var(--radius-md)] group">
                 O'rganish
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Button>
@@ -98,7 +98,7 @@ export default function LabPage() {
         </Card>
 
         {/* Maqolalar Card */}
-        <Card className="border-slate-200 hover:border-blue-300 hover:shadow-lg transition-all">
+        <Card className="rounded-[var(--radius-lg)] border-border bg-surface shadow-sm transition-shadow duration-200 hover:shadow-md">
           <CardContent className="p-6">
             <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-blue-50 border border-blue-200 mb-4">
               <FileText className="h-6 w-6 text-blue-700" />
@@ -108,7 +108,7 @@ export default function LabPage() {
               Hamjamiyat tomonidan yozilgan maqolalar, ilmiy ishlar va tajribalar
             </p>
             <Link href="/dashboard/lab/articles">
-              <Button variant="outline" className="w-full group">
+              <Button variant="outline" className="w-full rounded-[var(--radius-md)] group">
                 Ko'rish
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Button>
@@ -118,7 +118,7 @@ export default function LabPage() {
       </div>
 
       {/* Statistics — live from Firestore */}
-      <div className="mt-12 grid grid-cols-3 gap-6">
+      <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
         {loadingCounts ? (
           <>
             <StatSkeleton />
@@ -127,17 +127,17 @@ export default function LabPage() {
           </>
         ) : (
           <>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-teal-600 mb-1">{counts.subjects}</div>
-              <div className="text-sm text-slate-600">Fanlar</div>
+            <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-5 text-center shadow-sm transition-shadow duration-200 hover:shadow-md">
+              <div className="mb-1 text-3xl font-bold text-teal-600">{counts.subjects}</div>
+              <div className="text-sm text-muted-foreground">Fanlar</div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-amber-600 mb-1">{counts.methods}</div>
-              <div className="text-sm text-slate-600">Metodlar</div>
+            <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-5 text-center shadow-sm transition-shadow duration-200 hover:shadow-md">
+              <div className="mb-1 text-3xl font-bold text-amber-600">{counts.methods}</div>
+              <div className="text-sm text-muted-foreground">Metodlar</div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600 mb-1">{counts.articles}</div>
-              <div className="text-sm text-slate-600">Maqolalar</div>
+            <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-5 text-center shadow-sm transition-shadow duration-200 hover:shadow-md">
+              <div className="mb-1 text-3xl font-bold text-blue-600">{counts.articles}</div>
+              <div className="text-sm text-muted-foreground">Maqolalar</div>
             </div>
           </>
         )}

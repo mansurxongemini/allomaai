@@ -100,7 +100,7 @@ export function StatsGrid({ stats, isLoading }: StatsGridProps) {
             <div
               key={s.key}
               className={cn(
-                "flex flex-col items-center gap-2 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:shadow-md",
+                "flex flex-col items-center gap-2 rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-sm transition-shadow duration-200 hover:shadow-md",
                 s.border
               )}
             >

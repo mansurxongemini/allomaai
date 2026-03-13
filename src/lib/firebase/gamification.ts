@@ -10,17 +10,17 @@ import {
     serverTimestamp
 } from "firebase/firestore"
 import { todayDateStr } from "@/lib/date-utils"
-import { RANKS, getRank, BADGE_DEFINITIONS, UserProfile } from "@/lib/gamification"
+import { getRank, BADGE_DEFINITIONS, UserProfile } from "@/lib/gamification"
 
 /* ------------------------------------------------------------------ */
 /* Core Engine Functions */
 /* ------------------------------------------------------------------ */
 
 /**
- * Adds XP to a user, recalculates their rank, and creates an activity log.
+ * Adds points to a user, recalculates their rank, and creates an activity log.
  * All Firestore operations are wrapped in try/catch for resilience.
  */
-export async function addXP(userId: string, amount: number, reason: string, additionalData?: any) {
+export async function addPoints(userId: string, amount: number, reason: string, additionalData?: any) {
     if (!userId || amount <= 0) return
 
     try {
@@ -28,17 +28,16 @@ export async function addXP(userId: string, amount: number, reason: string, addi
         const userSnap = await getDoc(userRef)
 
         if (!userSnap.exists()) {
-            console.warn(`User ${userId} not found when adding XP.`)
+            console.warn(`User ${userId} not found when adding points.`)
             return
         }
 
         const userData = userSnap.data() as UserProfile
-        const newXP = (userData.xp || 0) + amount
-        const newRank = getRank(newXP)
+        const newTotalPoints = (userData.totalPoints || 0) + amount
+        const newRank = getRank(newTotalPoints)
 
         const updates: Partial<UserProfile> = {
-            xp: newXP,
-            totalPoints: (userData.totalPoints || 0) + amount,
+            totalPoints: newTotalPoints,
             //@ts-ignore
             rank: newRank,
         }
@@ -48,7 +47,7 @@ export async function addXP(userId: string, amount: number, reason: string, addi
         // Log the activity
         await addDoc(collection(db, "activities"), {
             userId,
-            type: "xp_gain",
+            type: "points_gain",
             amount,
             reason,
             timestamp: serverTimestamp(),
@@ -56,11 +55,11 @@ export async function addXP(userId: string, amount: number, reason: string, addi
             ...additionalData
         })
 
-        // After gaining XP, also check if today's streak needs updating
+        // After awarding points, also check if today's streak needs updating
         await updateDailyStreak(userId)
     } catch (error) {
-        console.error(`addXP error for user ${userId}:`, error)
-        // Non-fatal: XP failures shouldn't block UI so we swallow and log
+        console.error(`addPoints error for user ${userId}:`, error)
+        // Non-fatal: point-award failures shouldn't block UI so we swallow and log
     }
 }
 
