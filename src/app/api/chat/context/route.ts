@@ -34,13 +34,14 @@ export async function POST(req: Request) {
     const queryVector = await generateEmbedding(query.trim());
     const db = getAdminFirestore();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const nearestSnapshot = await db
       .collection('vector_memory')
       .findNearest('embedding', queryVector, {
         limit: 6,
         distanceMeasure: 'COSINE',
         distanceResultField: 'vector_distance',
-      })
+      } as any)
       .get();
 
     const sources: ContextSource[] = nearestSnapshot.docs.map((doc) => {

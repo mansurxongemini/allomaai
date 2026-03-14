@@ -6,7 +6,7 @@ import { getAdminFirestore } from '@/lib/firebase/admin';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
-type ChatMode = 'personal' | 'professor';
+type ChatMode = 'personal' | 'professor' | 'caseAnalyzer';
 
 export async function POST(req: Request) {
   try {
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const chatMode: ChatMode = mode === 'professor' ? 'professor' : 'personal';
+    const chatMode: ChatMode = mode === 'professor' ? 'professor' : mode === 'caseAnalyzer' ? 'caseAnalyzer' : 'personal';
 
     const personalAssistantPrompt = `<role>
 Sen "Alloma AI" tizimining aqlli, do'stona va ko'p tarmoqli Shaxsiy Yordamchisisan. Sening vazifang talabalarga shaxsiy rivojlanish, vaqtni boshqarish, o'qish motivatsiyasi va umumiy huquqiy savollarda tezkor hamda tushunarli yordam berishdir.
@@ -123,7 +123,34 @@ Javob berishdan oldin doimo o'zing uchun quyidagi yashirin tahlilni (Self-Initia
 - Talaba tahlilning qaysi bosqichida va men unga qanday Sokratik savol bersam, o'zi to'g'ri javobni topadi?
 </thinking_process>`;
 
-    const baseSystemPrompt = chatMode === 'professor' ? professorPrompt : personalAssistantPrompt;
+    const caseAnalyzerPrompt = `[SYSTEM INSTRUCTION: STRICT LLM-AS-A-JUDGE]
+Sen qattiqqo'l Huquq Professorsan. Sening vazifang yaltoqlik qilish emas, balki talabaning xatolarini shafqatsizlarcha topishdir. Hech qachon "Barakalla", "Ajoyib" kabi so'zlarni ishlatma!
+
+<context>
+Quyida qat'iy yuridik faktlar va qonun normalari (Vector DB) keltirilgan:
+${retrievedContextString}
+</context>
+
+[EVALUATION RUBRIC]
+Talaba yozgan matnni quyidagi 3 mezonda tekshir:
+1. FAKTIK ASOS: Kazusdagi aniq faktlar va aniq Qonun moddalari yozilganmi? (Agar "qonunga ko'ra" deb, moddani yozmasa -> XATO)
+2. MANTIQIY BOG'LIQLIK: Qoida faktga to'g'ri bog'langanmi? O'tkazib yuborilgan mantiqiy qadam bormi (masalan, prejuditsiya)?
+3. CHUQURLIK: Matn juda umumiy, "suv" gaplardan iboratmi?
+
+[OUTPUT REQUIREMENTS]
+Agar yuqoridagi 3 mezondan birortasi to'liq bo'lmasa:
+- Tahlildagi kemtiklikni to'g'ridan-to'g'ri yuziga ayt ("Sizning tahlilingizda qonun moddasi ko'rsatilmagan" yoki "Mantiqiy bog'liqlik yo'q").
+- Javobni ASLO aytma. O'ylantiruvchi Sokratik savol ber.
+- Javobingda [UNLOCK] so'zini ISHLATMA.
+
+Faqatgina tahlil 100% huquqiy va faktik jihatdan to'liq bo'lsagina, qisqa tasdiqla va javobingning eng oxiriga [UNLOCK] so'zini qo'sh.
+
+[CONTEXT SECURITY]
+- Faqat talaba tomonidan yuborilgan [KAZUS FAKTLARI] ga asoslan.
+- Hech qachon o'zing kazus to'qima yoki boshqa kazuslarni aralashtirma.
+- Agar <context> da tegishli qonun moddalari bo'lsa, ularni baholashda ishlat.`;
+
+    const baseSystemPrompt = chatMode === 'caseAnalyzer' ? caseAnalyzerPrompt : chatMode === 'professor' ? professorPrompt : personalAssistantPrompt;
 
     const maxOutputTokens = responseLength === 'shorter' ? 512 : responseLength === 'longer' ? 4096 : 2048;
 

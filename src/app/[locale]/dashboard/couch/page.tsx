@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useRef, useEffect, useCallback, useMemo, Fragment } from "react"
 import {
@@ -42,6 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -199,11 +200,27 @@ function getMessageText(message: UIMessage): string {
     .join("") ?? ""
 }
 
+/** Strip the technical [KAZUS FAKTLARI] + [KAZUS TAHLILI] wrapper so users see only their raw input */
+function cleanUserMessageText(raw: string): string {
+  return raw
+    .replace(/\[KAZUS FAKTLARI\][\s\S]*?Talaba yozgan matn:\s*\n?/g, "")
+    .replace(/^\[KAZUS TAHLILI\s*-\s*[A-Z]+\]\s*Talaba yozgan matn:\s*/i, "")
+    .replace(/QAT'IY KO'RSATMA:[\s\S]*/g, "")
+    .replace(/^"+|"+$/g, "")
+    .trim()
+}
+
+/** Strip hidden [UNLOCK] trigger from AI messages */
+function cleanAssistantMessageText(raw: string): string {
+  return raw.replace(/\[UNLOCK\]/g, "").replace(/\[SUCCESS\]/g, "").trim()
+}
+
 function NotebookMessage({ message }: { message: UIMessage }) {
   const isUser = message.role === "user"
   const text = getMessageText(message)
 
   if (isUser) {
+    const displayText = cleanUserMessageText(text)
     return (
       <motion.div
         initial={{ opacity: 0, y: 6 }}
@@ -211,7 +228,7 @@ function NotebookMessage({ message }: { message: UIMessage }) {
         className="flex justify-end mb-6"
       >
         <div className="max-w-[78%] px-4 py-3 rounded-2xl bg-slate-100 dark:bg-[#2a2f3a] text-slate-800 dark:text-slate-200 text-[15px] leading-relaxed whitespace-pre-wrap">
-          {text}
+          {displayText}
         </div>
       </motion.div>
     )
@@ -254,7 +271,7 @@ function NotebookMessage({ message }: { message: UIMessage }) {
       </div>
       <div className="flex-1 min-w-0">
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-          {mainText.trim()}
+          {cleanAssistantMessageText(mainText.trim())}
         </ReactMarkdown>
         {showTip && (
           <div className="mt-6 p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50">
@@ -372,6 +389,8 @@ function CaseWorkspace({
   isCheckingStep,
   isHintLoading,
   hintLadders,
+  onSubmitToChat,
+  isChatLoading,
 }: {
   activeIracStep: IracStep
   setActiveIracStep: (step: IracStep) => void
@@ -386,6 +405,8 @@ function CaseWorkspace({
   isCheckingStep: boolean
   isHintLoading: boolean
   hintLadders: Partial<Record<IracStep, HintLadder>>
+  onSubmitToChat: (msg: { role: string; content: string }) => void
+  isChatLoading: boolean
 }) {
   const sections: { key: IracStep; title: string }[] = [
     { key: "issue", title: "Muammo (Issue)" },
@@ -486,17 +507,39 @@ function CaseWorkspace({
               {section.title}
             </h3>
             {(isActive || isEditingDoneStep) ? (
-              <textarea
-                value={iracDraft[section.key]}
-                onChange={e => {
-                  setIracDraft(prev => ({ ...prev, [section.key]: e.target.value }))
-                  autoResize(e.currentTarget)
-                }}
-                onInput={e => autoResize(e.currentTarget)}
-                rows={3}
-                placeholder="Yozishni boshlang..."
-                className="w-full min-h-[100px] bg-slate-50 dark:bg-slate-900/50 border-l-4 border-primary pl-4 py-3 text-lg outline-none resize-none"
-              />
+              <>
+                <textarea
+                  value={iracDraft[section.key]}
+                  onChange={e => {
+                    setIracDraft(prev => ({ ...prev, [section.key]: e.target.value }))
+                    autoResize(e.currentTarget)
+                  }}
+                  onInput={e => autoResize(e.currentTarget)}
+                  rows={3}
+                  placeholder="Yozishni boshlang..."
+                  className="w-full min-h-[100px] bg-slate-50 dark:bg-slate-900/50 border-l-4 border-primary pl-4 py-3 text-lg outline-none resize-none"
+                />
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    disabled={isChatLoading}
+                    onClick={() => {
+                      onSubmitToChat({
+                        role: 'user',
+                        content: `[KAZUS FAKTLARI]:\n"${caseText}"\n\n[KAZUS TAHLILI - ${section.key.toUpperCase()}] Talaba yozgan matn:\n"${iracDraft[section.key]}"\n\nQAT'IY KO'RSATMA: Faqatgina yuqoridagi [KAZUS FAKTLARI] ga asoslanib, talabaning tahlilini bahola. Boshqa kazuslarni (masalan, "Botirning merosi") umuman aralashtirma!`
+                      })
+                    }}
+                    className={cn(
+                      "rounded-full px-4 py-2 text-xs font-semibold transition-colors",
+                      isChatLoading
+                        ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
+                    )}
+                  >
+                    {isChatLoading ? "AI Tekshirmoqda..." : "Tekshirish"}
+                  </button>
+                </div>
+              </>
             ) : (
               <div className="relative">
                 <button
@@ -666,6 +709,10 @@ export default function CouchPage() {
 
   // Memoize callbacks so that useChat does not see a new options object on
   // every render, which could trigger unnecessary internal re-initializations.
+  // Ref to track the last message ID that triggered an unlock – prevents
+  // duplicate unlocks when messages array reference changes.
+  const lastUnlockedMsgId = useRef<string | null>(null)
+
   const handleFinish = useCallback(({ messages: allMessages }: { messages: unknown[] }) => {
     setFetchError(null)
     if (activeSessionIdRef.current && currentUserRef.current) {
@@ -701,6 +748,32 @@ export default function CouchPage() {
   const isModeLocked = messages.length > 0
 
   const isLoading = status === "submitted" || status === "streaming"
+
+  // ── Auto-unlock IRAC steps when AI includes [UNLOCK] ──
+  useEffect(() => {
+    if (isLoading) return
+    if (messages.length === 0) return
+
+    const lastMessage = messages[messages.length - 1]
+    if (lastMessage.role !== "assistant") return
+    if (lastMessage.id === lastUnlockedMsgId.current) return
+
+    const text = getMessageText(lastMessage)
+    if (text.includes("[UNLOCK]") || text.includes("[SUCCESS]")) {
+      lastUnlockedMsgId.current = lastMessage.id
+
+      setActiveIracStep((current) => {
+        const order: IracStep[] = ["issue", "rule", "application", "conclusion"]
+        const currentIndex = order.indexOf(current)
+        if (currentIndex !== -1 && currentIndex < order.length - 1) {
+          const nextStep = order[currentIndex + 1]
+          toast.success("Muvaffaqiyatli! Keyingi bosqich ochildi.", { icon: '🔓' })
+          return nextStep
+        }
+        return current
+      })
+    }
+  }, [messages, isLoading])
 
   useEffect(() => {
     if (error) {
@@ -797,7 +870,7 @@ export default function CouchPage() {
   // every render, which could trigger extra renders in consuming components.
   const chatBody = useMemo(() => ({
     topicId: selectedTopic,
-    mode: chatMode === "caseAnalyzer" ? "professor" : chatMode,
+    mode: chatMode,
     responseLength: "default",
     userId: currentUser?.uid ?? null,
   }), [selectedTopic, chatMode, currentUser?.uid])
@@ -1270,6 +1343,8 @@ export default function CouchPage() {
                 isCheckingStep={isCheckingStep}
                 isHintLoading={isHintLoading}
                 hintLadders={hintLadders}
+                onSubmitToChat={(msg) => sendMessage({ text: msg.content }, { body: chatBody })}
+                isChatLoading={isLoading}
               />
             </main>
           </div>
