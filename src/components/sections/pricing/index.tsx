@@ -63,7 +63,7 @@ export default function PricingSection() {
             </div>
           </div>
 
-          <div className="mt-12 z-30 relative space-y-4 sm:mt-16 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-6 lg:max-w-2xl lg:mx-auto lg:grid-cols-2">
+          <div className="mt-12 z-30 relative space-y-4 sm:mt-16 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-6 lg:max-w-5xl lg:mx-auto lg:grid-cols-3 xl:gap-8">
             {BILLING_PLANS.map((plan, index) => (
               <PricingCard
                 key={index}
