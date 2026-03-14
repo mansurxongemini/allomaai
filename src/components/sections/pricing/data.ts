@@ -25,6 +25,10 @@ const AMOUNTS = {
     monthly: 40,
     yearly: 384,
   },
+  ultra: {  // <-- SHU QISMNI QO'SHING (Narxlarni o'zingizga moslab o'zgartirishingiz mumkin)
+    monthly: 90, 
+    yearly: 864,
+  },
   enterprise: {
     monthly: null,
     yearly: null,
@@ -81,5 +85,32 @@ export const getBillingPlans = (t: any) => [
     ],
     cta: t('pro_cta'),
     popular: true,
+  },
+  {
+    name: t('ultra_title'),
+    description: t('ultra_desc'),
+    pricing: {
+      monthly: {
+        amount: AMOUNTS['ultra']['monthly'],
+        formattedPrice: '$' + AMOUNTS['ultra']['monthly'],
+        stripeId: process.env.NEXT_PUBLIC_ULTRA_MONTHLY_PRICE_ID || null,
+      },
+      yearly: {
+        amount: AMOUNTS['ultra']['yearly'],
+        formattedPrice: '$' + AMOUNTS['ultra']['yearly'],
+        stripeId: process.env.NEXT_PUBLIC_ULTRA_YEARLY_PRICE_ID || null,
+      },
+    },
+    features: [
+      t('features.advanced_ai'),
+      t('features.mind_maps'),
+      t('features.essays'),
+      t('features.repetition'),
+      t('features.support'),
+      t('features.case_generator') // Ultra uchun qo'shimcha afzallik
+    ],
+    cta: t('ultra_cta'),
+    popular: false,
   }
+  
 ];
