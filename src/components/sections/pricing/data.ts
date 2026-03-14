@@ -84,7 +84,7 @@ export const getBillingPlans = (t: any) => [
       t('features.support')
     ],
     cta: t('pro_cta'),
-    popular: true,
+    popular: false,
   },
   {
     name: t('ultra_title'),
@@ -110,7 +110,7 @@ export const getBillingPlans = (t: any) => [
       t('features.case_generator') // Ultra uchun qo'shimcha afzallik
     ],
     cta: t('ultra_cta'),
-    popular: false,
+    popular: true,
   }
   
 ];
