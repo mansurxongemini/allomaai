@@ -42,13 +42,17 @@
         "popular": "Eng mashhur",
         "per_month": "/ oyiga",
         "per_year": "/ yiliga",
+        "ultra_title": "Ultra",
+        "ultra_desc": "Kazuslarni generatsiya qiluvchi va chuqur tahlil qiluvchi ekspert tizim.",
+        "ultra_cta": "Boshlash",
         "features": {
             "basic_ai": "Asosiy AI model",
             "advanced_ai": "Kengaytirilgan AI (Sokratik Tyutor)",
             "mind_maps": "Cheklanmagan Dinamik Mind Map",
             "essays": "LAB & Couch insholar tekshiruvi",
             "repetition": "To'liq intervalli takrorlash tizimi",
-            "support": "Tezkor yordam xizmati"
+            "support": "Tezkor yordam xizmati",
+            "case_generator": "AI orqali kazuslar javobini yaratish"
         }
     },
     "FAQ": {
