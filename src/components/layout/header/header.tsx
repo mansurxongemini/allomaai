@@ -52,8 +52,6 @@ export default function Header() {
               <LanguageSwitcher />
             </div>
 
-            <ThemeToggle />
-
             <button
               onClick={(e) => {
                 e.stopPropagation();
