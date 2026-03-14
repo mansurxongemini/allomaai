@@ -42,13 +42,17 @@
         "popular": "Most Popular",
         "per_month": "/ month",
         "per_year": "/ year",
+        "ultra_title": "Ultra",
+        "ultra_desc": "An expert system for deep analysis and generating case solutions.",
+        "ultra_cta": "Get Started",
         "features": {
             "basic_ai": "Basic AI model access",
             "advanced_ai": "Advanced AI model access (Socratic Tutor)",
             "mind_maps": "Unlimited Dynamic Mind Maps",
             "essays": "LAB & Couch document essays",
             "repetition": "Full Spaced Repetition features",
-            "support": "Priority support"
+            "support": "Priority support",
+            "case_generator": "AI-powered case solution generation"
         }
     },
     "FAQ": {
