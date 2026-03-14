@@ -13,7 +13,7 @@ export default function middleware(req: NextRequest) {
 
     if (isDashboardRoute && !token) {
         // 3. Unauthorized user trying to access /dashboard -> redirect to /signin
-        const locale = req.nextUrl.pathname.split('/')[1] || 'en';
+        const locale = req.nextUrl.pathname.split('/')[1] || 'uz';
         const loginUrl = new URL(`/${locale}/signin`, req.url);
         return NextResponse.redirect(loginUrl);
     }
